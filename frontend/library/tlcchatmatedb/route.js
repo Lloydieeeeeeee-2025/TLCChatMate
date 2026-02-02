@@ -1,16 +1,16 @@
 import mysql from "mysql2/promise"
 
-// october 20
 export const chatmate = mysql.createPool({
-    host: "localhost",
-    user: "u690915301_administrator",
-    password: "TestDB123!",
-    database: "u690915301_tlcchatmate",
-    port: 3306,
+    host: process.env.DB_HOST || "db",
+    user: process.env.DB_USER || "root",
+    password: process.env.DB_PASSWORD || "kmlV3@VVVE$$56nnmh",
+    database: process.env.DB_NAME || "tlcchatmate",
+    port: Number(process.env.DB_PORT) || 3306,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
-})
+});
+
 
 // latest wgen september 21, 2025
 {/*
