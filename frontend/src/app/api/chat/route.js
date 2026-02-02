@@ -11,12 +11,11 @@ export async function POST(req) {
         console.log("Sending request to FastAPI with prompt:", prompt);
 
         const fastapiResponse = await fetch(`${API_BASE_URL}/VirtualFrontDesk`, {
-            method: "POST", // must match @app.post
+            method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                // These keys must match PromptRequest in FastAPI
                 prompt,
-                session_id: sessionId ?? null,
+                conversationSession: sessionId ?? ""
             }),
         });
 
