@@ -1,7 +1,7 @@
 import mysql from "mysql2/promise"
 
 export const chatmate = mysql.createPool({
-    host: process.env.DB_HOST || "localhost", // <-- changed
+    host: process.env.DB_HOST || "host.docker.internal",
     user: process.env.DB_USER || "root",
     password: process.env.DB_PASSWORD || "kmlV3@VVVE$$56nnmh",
     database: process.env.DB_NAME || "tlcchatmate",
@@ -10,6 +10,7 @@ export const chatmate = mysql.createPool({
     connectionLimit: 10,
     queueLimit: 0
 });
+
 
 /*
 export const chatmate = mysql.createPool({
