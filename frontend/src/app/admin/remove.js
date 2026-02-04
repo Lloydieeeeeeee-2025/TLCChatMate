@@ -45,7 +45,7 @@ export default function Remove({ id, name, link, apiroute }) {
                 </button>
             </div>
             {showModal && (
-                <div className="fixed z-70 inset-0 flex items-center justify-center w-full h-full bg-opacity-50 bg-black/30 backdrop-blur-xs overflow-y-auto" onClick={() => setShowModal(false)}>
+                <div className="fixed z-70 inset-0 flex items-center justify-center w-full h-full overflow-y-auto" onClick={() => setShowModal(false)}>
                     <div className="relative p-4 w-full max-w-md h-full sm:h-auto" onClick={(e) => e.stopPropagation()}>
                         <div className="relative bg-white rounded-lg shadow-sm dark:bg-gray-700">
                             <div className="p-4 md:p-5 text-center">

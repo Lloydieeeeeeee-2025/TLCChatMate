@@ -240,6 +240,7 @@ export default function Handbook() {
                                     </div>
                                 ) : (
                                     <div className="min-w-full">
+                                        {/* Desktop View */}
                                         <div className="hidden md:block">
                                             <table className="w-full text-sm text-left">
                                                 <thead className="text-xs font-semibold text-white uppercase bg-[#205781] sticky top-0 z-10">
@@ -252,7 +253,7 @@ export default function Handbook() {
                                                     {sortedData.map((handbook, index) => (
                                                         <tr key={handbook.handbook_id ?? `handbook-${index}`} className="bg-white hover:bg-gray-50 transition-colors duration-150">
                                                             <td className="px-6 py-4 text-gray-800 font-medium">
-                                                                <button onClick={() => handleViewDocument(handbook.handbook_id, handbook.handbook_name)} className="text-gray-600 hover:[#205781]/10 hover:underline">
+                                                                <button onClick={() => handleViewDocument(handbook.handbook_id, handbook.handbook_name)} className="text-gray-600 hover:text-[#205781] hover:underline">
                                                                     {handbook.handbook_name}
                                                                 </button>
                                                             </td>
@@ -296,6 +297,20 @@ export default function Handbook() {
                                                                                         <span className="whitespace-nowrap text-sm">Update</span>
                                                                                     </button>
                                                                                 </li>
+                                                                                {/* DELETE BUTTON ADDED HERE */}
+                                                                                <li>
+                                                                                    <button
+                                                                                        onClick={() => handleDelete(handbook.handbook_id)}
+                                                                                        className="w-full text-left text-red-600 hover:bg-red-50 flex items-center p-3"
+                                                                                    >
+                                                                                        <div className="flex items-center justify-center bg-white border border-slate-200 rounded shadow-sm h-7 w-7 shrink-0 mr-3">
+                                                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
+                                                                                                <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                                                            </svg>
+                                                                                        </div>
+                                                                                        <span className="whitespace-nowrap text-sm">Delete</span>
+                                                                                    </button>
+                                                                                </li>
                                                                             </ul>
                                                                         </div>
                                                                     )}
@@ -324,15 +339,7 @@ export default function Handbook() {
                                                             {openDropdownId === handbook.handbook_id && (
                                                                 <div className="origin-top-right absolute right-0 mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-xl z-20">
                                                                     <ul className="py-1">
-                                                                        <li>
-                                                                            <button onClick={() => handleViewDocument(handbook.handbook_id, handbook.handbook_name)} className="w-full text-left text-slate-800 hover:bg-slate-50 flex items-center p-3 text-sm">
-                                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-3">
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                                                                </svg>
-                                                                                <span>View</span>
-                                                                            </button>
-                                                                        </li>
+                                                                        
                                                                         <li>
                                                                             <button onClick={() => handleDownloadDocument(handbook.handbook_id, handbook.handbook_name)} className="w-full text-left text-slate-800 hover:bg-slate-50 flex items-center p-3 text-sm">
                                                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-3">
@@ -360,14 +367,12 @@ export default function Handbook() {
                                                                         <li>
                                                                             <button
                                                                                 onClick={() => handleDelete(handbook.handbook_id)}
-                                                                                className="w-full text-left text-red-600 hover:bg-red-50 flex items-center p-3"
+                                                                                className="w-full text-left text-red-600 hover:bg-red-50 flex items-center p-3 text-sm"
                                                                             >
-                                                                                <div className="flex items-center justify-center bg-white border border-slate-200 rounded shadow-sm h-7 w-7 shrink-0 mr-3">
-                                                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
-                                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                                                                    </svg>
-                                                                                </div>
-                                                                                <span className="whitespace-nowrap text-sm">Delete</span>
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-3">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                                                </svg>
+                                                                                <span>Delete</span>
                                                                             </button>
                                                                         </li>
                                                                     </ul>

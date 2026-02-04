@@ -17,7 +17,7 @@ export default function Navigation() {
             const parsedData = JSON.parse(storedUserData)
             setUserData(parsedData)
         } else {
-            router.push("/userpage/signin")
+            router.push("/admin/login")
         }
     }, [router])
 
@@ -67,6 +67,16 @@ export default function Navigation() {
                 </svg>
             ),
         },
+        {
+            href: "/admin/faqs",
+            label: "FAQS",
+            icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
+                </svg>
+
+            ),
+        },
     ]
 
     return (
@@ -77,8 +87,8 @@ export default function Navigation() {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             {/* Mobile menu button */}
-                            <button 
-                                onClick={() => setIsMenuActive(!isMenuActive)} 
+                            <button
+                                onClick={() => setIsMenuActive(!isMenuActive)}
                                 className="inline-flex items-center justify-center p-2.5 rounded-lg text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#205781]/20 sm:hidden transition-all duration-200"
                                 aria-label="Toggle menu"
                             >
@@ -86,26 +96,21 @@ export default function Navigation() {
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                                 </svg>
                             </button>
-                            
+
                             {/* Logo */}
                             <div className="flex items-center gap-3">
-                                <img src="/logo/logo.png" className="h-8 sm:h-10" alt="TLC ChatMate Logo" />
+                                <img src="/favicon.ico" className="h-8 sm:h-10" alt="TLC ChatMate Logo" />
                                 <span className="text-lg sm:text-xl font-bold text-[#205781]">TLC ChatMate</span>
                             </div>
                         </div>
 
                         {/* User dropdown */}
                         <div className="relative">
-                            <button 
-                                type="button" 
-                                onClick={toggleDropdown} 
-                                className="flex items-center gap-2 p-1.5 rounded-full hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#205781]/20 transition-all duration-200"
-                            >
-                                <img 
-                                    className="w-9 h-9 rounded-full object-cover ring-2 ring-gray-100" 
-                                    src="https://flowbite.com/docs/images/people/profile-picture-5.jpg  " 
-                                    alt="User" 
-                                />
+                            <button type="button" onClick={toggleDropdown} className="flex items-center gap-2 p-1.5 rounded-full hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#205781]/20 transition-all duration-200">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" />
+                                </svg>
+
                             </button>
 
                             {dropdownOpen && (
@@ -114,14 +119,11 @@ export default function Navigation() {
                                         <p className="text-sm font-semibold text-gray-900 truncate">
                                             {userData?.user_name || "Guest"}
                                         </p>
-                                        <p className="text-xs text-gray-500 truncate mt-0.5">
-                                            {userData?.user_email || "No email"}
-                                        </p>
                                     </div>
 
                                     <div className="py-2">
-                                        <Link 
-                                            href="/student/faqs" 
+                                        <Link
+                                            href="/student/faqs"
                                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
@@ -130,8 +132,8 @@ export default function Navigation() {
                                             ChatMate
                                         </Link>
 
-                                        <button 
-                                            onClick={handleSignOut} 
+                                        <button
+                                            onClick={handleSignOut}
                                             className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
@@ -149,10 +151,9 @@ export default function Navigation() {
 
             {/* Sidebar — now always shown for authenticated users */}
             {userData && (
-                <aside 
-                    className={`fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform duration-300 ease-in-out bg-[#205781] ${
-                        isMenuActive ? "translate-x-0" : "-translate-x-full"
-                    } sm:translate-x-0`}
+                <aside
+                    className={`fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform duration-300 ease-in-out bg-[#205781] ${isMenuActive ? "translate-x-0" : "-translate-x-full"
+                        } sm:translate-x-0`}
                 >
                     <div className="h-full px-4 py-6 overflow-y-auto">
                         {/* User Profile Card */}
@@ -180,11 +181,10 @@ export default function Navigation() {
                                 <Link
                                     key={link.href}
                                     href={link.href}
-                                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                                        get_current_page === link.href
-                                            ? "bg-white/20 text-white font-medium"
-                                            : "text-white/80 hover:bg-white/10 hover:text-white"
-                                    }`}
+                                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${get_current_page === link.href
+                                        ? "bg-white/20 text-white font-medium"
+                                        : "text-white/80 hover:bg-white/10 hover:text-white"
+                                        }`}
                                 >
                                     {link.icon}
                                     <span className="text-sm">{link.label}</span>
@@ -197,7 +197,7 @@ export default function Navigation() {
 
             {/* Mobile Overlay */}
             {isMenuActive && (
-                <div 
+                <div
                     className="fixed inset-0 bg-black/20 z-30 sm:hidden"
                     onClick={() => setIsMenuActive(false)}
                 />

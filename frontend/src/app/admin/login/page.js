@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 export default function Login() {
     const router = useRouter();
-    const [userEmail, setUserEmail] = useState("");
+    const [userName, setUserName] = useState("");
     const [userPassword, setUserPassword] = useState("");
     const [rememberMe, setRememberMe] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
@@ -21,7 +21,7 @@ export default function Login() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    user_email: userEmail.trim(),
+                    user_name: userName.trim(),
                     user_password: userPassword,
                     remember: rememberMe,
                 }),
@@ -31,12 +31,11 @@ export default function Login() {
                 const authenticatedUserData = {
                     user_id: data.data.user_id,
                     user_name: data.data.user_name,
-                    user_email: data.data.user_email,
                 };
                 localStorage.setItem("userData", JSON.stringify(authenticatedUserData));
                 router.push("/admin/users");
             } else {
-                setErrorMessage(data.message || "Invalid email or password.");
+                setErrorMessage(data.message || "Invalid username or password.");
             }
         } catch (error) {
             console.error("Login error:", error);
@@ -66,7 +65,7 @@ export default function Login() {
                     </div>
                     <h1 className="text-4xl font-bold text-[#205781] text-center">TLC ChatMate</h1>
                     <div className="relative w-40 h-40 sm:w-40 sm:h-40 md:w-50 md:h-50 lg:w-60 lg:h-60">
-                        <Image className="drop-shadow-md" src="/logo/logo.png" alt="TLC ChatMate logo" layout="fill" objectFit="contain" />
+                        <img className="drop-shadow-md object-contain" src="/logo/logo.png" alt="TLC ChatMate logo"/>
                     </div>
                 </div>
                 <form onSubmit={handleLogin} className="flex w-full flex-col justify-center p-8 lg:p-12 bg-[#f2f2f2] rounded shadow">
@@ -74,10 +73,10 @@ export default function Login() {
                     {errorMessage && <span className="text-red-600 text-sm text-center mb-4">{errorMessage}</span>}
                     <div className="mb-6">
                         <div className="relative mb-2">
-                            {focusedInput === "email" && (
-                                <label htmlFor="email" className={`absolute -top-2 bg-white px-1 left-3 rounded-xl text-xs transition-all ${userEmail ? "text-[#205781]" : "text-gray-400"}`}>Email</label>
+                            {focusedInput === "username" && (
+                                <label htmlFor="username" className={`absolute -top-2 bg-white px-1 left-3 rounded-xl text-xs transition-all ${userName ? "text-[#205781]" : "text-gray-400"}`}>Username</label>
                             )}
-                            <input type="email" placeholder="Email" id="email" value={userEmail} className={`block w-full bg-white p-2 rounded-lg outline-none transition-all ${userEmail ? "border border-[#205781]" : "border border-gray-400"}`} onChange={(e) => setUserEmail(e.target.value)} onFocus={() => handleInputFocus("email")} onBlur={() => handleInputBlur("email", userEmail)} />
+                            <input type="text" placeholder="Username" id="username" value={userName} className={`block w-full bg-white p-2 rounded-lg outline-none transition-all ${userName ? "border border-[#205781]" : "border border-gray-400"}`} onChange={(e) => setUserName(e.target.value)} onFocus={() => handleInputFocus("username")} onBlur={() => handleInputBlur("username", userName)} />
                         </div>
                         <div className="relative mb-2">
                             {focusedInput === "password" && (

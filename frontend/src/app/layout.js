@@ -19,16 +19,13 @@ export const metadata = {
   title: "TLC ChatMate",
   description: "TLC ChatMate: A Web-based Conversational Agent for The Lewis College",
   icons: {
-    icon: ["/logo/logo.png"]
+    icon: ["frontend/frontend/public/favicon.ico"]
   }
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <head>
-        <link rel="icon" type="image/png" sizes="32x32" href="/logo/logo.png" />
-      </head>
       <body className={`${nunitoSans.className} ${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
       </body>

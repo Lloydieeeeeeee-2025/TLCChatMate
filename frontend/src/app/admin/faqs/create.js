@@ -2,47 +2,48 @@
 import { useState } from "react"
 
 export default function Create({ open, close }) {
-    const [linkUrl, setLinkUrl] = useState("")
-    const [linkUrlError, setLinkUrlError] = useState("")
-    const [description, setDescription] = useState("")
+    const [question, setQuestion] = useState("")
+    const [questionError, setQuestionError] = useState("")
 
     const submit = async () => {
-        setLinkUrlError("")
-
-        if (!linkUrl) {
-            setLinkUrlError("Please enter a valid URL.")
+        setQuestionError("")
+        
+        // Question validation
+        if (!question || question.trim() === "") {
+            setQuestionError("Question is required.")
             return
         }
-
+        
+        if (question.length > 100) {
+            setQuestionError("Question must be less than 500 characters.")
+            return
+        }
+        
         try {
-            const res = await fetch("/api/admin/url", {
+            const res = await fetch("/api/admin/faqs", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    link_url: linkUrl,
-                    description: description || null,
+                    question: question.trim(),
                 }),
             })
-
             const data = await res.json()
-
             if (!res.ok) {
-                if (res.status === 400) {
-                    setLinkUrlError(data.message || "Invalid input.")
+                if (res.status === 409) {
+                    setQuestionError("This question already exists.")
+                } else if (res.status === 400) {
+                    setQuestionError(data.message || "Invalid input.")
                 } else {
-                    console.error("Unexpected error:", data.message)
-                    setLinkUrlError("An unexpected error occurred.")
+                    setQuestionError("An unexpected error occurred.")
                 }
                 return
             }
-
-            setLinkUrl("")
-            setDescription("")
+            setQuestion("")
             close()
             window.location.reload()
         } catch (err) {
             console.error("Error:", err.message)
-            setLinkUrlError("An error occurred while creating the URL.")
+            setQuestionError("An error occurred while creating the FAQ.")
         }
     }
 
@@ -60,7 +61,7 @@ export default function Create({ open, close }) {
                     </div>
                     <div className="flex flex-col h-full">
                         <div className="mb-4 w-full flex justify-between items-center">
-                            <h2 className="text-lg font-semibold mb-2">Add New URL</h2>
+                            <h2 className="text-lg font-semibold mb-2">Add New FAQ</h2>
                             <button onClick={close} className="text-gray-600 hover:text-black">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -70,15 +71,20 @@ export default function Create({ open, close }) {
                         <div className="w-full flex-1 overflow-y-auto">
                             <div className="space-y-4 md:space-y-6">
                                 <div className="space-y-2">
-                                    <label htmlFor="linkUrl" className="block text-sm font-medium text-gray-700">Link URL</label>
-                                    <input type="url" id="linkUrl" name="linkUrl" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://example.com" className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent" />
-                                    {linkUrlError && (
-                                        <span className="text-red-600 text-sm mt-1 block">{linkUrlError}</span>
-                                    )}
-                                </div>
-                                <div className="space-y-2">
-                                    <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
-                                    <input id="description" name="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Enter URL description" rows="4" className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"/>
+                                    <label htmlFor="question" className="block text-sm font-medium text-gray-700">Question</label>
+                                    <textarea 
+                                        id="question" 
+                                        name="question" 
+                                        value={question} 
+                                        onChange={(e) => setQuestion(e.target.value)} 
+                                        placeholder="Enter the question"
+                                        rows="3"
+                                        className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent resize-none" 
+                                    />
+                                    <div className="text-xs text-gray-500 text-right">
+                                        {question.length}/100 characters
+                                    </div>
+                                    {questionError && <span className="text-red-600 text-sm mt-1 block">{questionError}</span>}
                                 </div>
                             </div>
                         </div>

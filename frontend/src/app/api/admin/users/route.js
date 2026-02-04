@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 
 export async function GET() {
     try {
-        const [users] = await chatmate.query(`SELECT user_id, user_name, user_email FROM User`);
+        const [users] = await chatmate.query(`SELECT user_id, user_name FROM User`);
 
         return NextResponse.json({ success: true, data: users }, { status: 200 });
     } catch (error) {
@@ -24,9 +24,9 @@ export async function DELETE(request) {
 
 export async function PUT(request) {
     try {
-        const { user_id, user_name, user_email, currentPassword, newPassword } = await request.json();
+        const { user_id, user_name, currentPassword, newPassword } = await request.json();
 
-        if (!user_id || !user_name || !user_email) {
+        if (!user_id || !user_name) {
             return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 });
         }
 
@@ -36,17 +36,17 @@ export async function PUT(request) {
             return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
         }
 
-        // Validate email uniqueness (excluding the current user)
-        const [existingEmail] = await chatmate.query(
-            `SELECT user_id FROM User WHERE user_email = ? AND user_id != ?`,
-            [user_email, user_id]
+        // Validate username uniqueness (excluding the current user)
+        const [existingUser] = await chatmate.query(
+            `SELECT user_id FROM User WHERE user_name = ? AND user_id != ?`,
+            [user_name, user_id]
         );
-        if (existingEmail.length > 0) {
-            return NextResponse.json({ success: false, message: "Email is already registered" }, { status: 409 });
+        if (existingUser.length > 0) {
+            return NextResponse.json({ success: false, message: "Username is already taken" }, { status: 409 });
         }
 
-        let updateQuery = `UPDATE User SET user_name = ?, user_email = ?`;
-        const queryParams = [user_name, user_email];
+        let updateQuery = `UPDATE User SET user_name = ?`;
+        const queryParams = [user_name];
 
         // Handle password update if provided
         if (currentPassword && newPassword) {
@@ -86,15 +86,40 @@ export async function PUT(request) {
 
 export async function POST(request) {
     try {
-        const { user_name, user_email, user_password } = await request.json();
+        const { user_name, user_password } = await request.json();
 
+        // Validate required fields
+        if (!user_name || !user_password) {
+            return NextResponse.json(
+                { success: false, message: "Username and password are required." },
+                { status: 400 }
+            );
+        }
+
+        // Validate username format
+        if (!user_name.match(/^[A-Za-z0-9_-]{2,50}$/)) {
+            return NextResponse.json(
+                { success: false, message: "Username must be 2-50 characters and can contain letters, numbers, underscores, and hyphens." },
+                { status: 400 }
+            );
+        }
+
+        // Check if username already exists
         const [existingUser] = await chatmate.query(
-            "SELECT user_id FROM User WHERE user_email = ?",
-            [user_email]
+            "SELECT user_id FROM User WHERE user_name = ?",
+            [user_name]
         );
         if (existingUser.length > 0) {
             return NextResponse.json(
-                { success: false, message: "Email is already registered." },
+                { success: false, message: "Username is already taken." },
+                { status: 409 }
+            );
+        }
+
+        // Validate password strength
+        if (!user_password.match(/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/)) {
+            return NextResponse.json(
+                { success: false, message: "Password must contain uppercase, lowercase, number, and special character. Minimum 8 characters." },
                 { status: 400 }
             );
         }
@@ -103,8 +128,8 @@ export async function POST(request) {
         const hashedPassword = await bcrypt.hash(user_password, salt);
 
         await chatmate.query(
-            "INSERT INTO User (user_name, user_email, user_password) VALUES (?, ?, ?)",
-            [user_name, user_email, hashedPassword]
+            "INSERT INTO User (user_name, user_password) VALUES (?, ?)",
+            [user_name, hashedPassword]
         );
 
         return NextResponse.json(

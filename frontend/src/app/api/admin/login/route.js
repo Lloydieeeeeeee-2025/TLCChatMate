@@ -4,23 +4,23 @@ import bcrypt from "bcryptjs";
 
 export async function POST(request) {
     try {
-        const { user_email, user_password } = await request.json();
+        const { user_name, user_password } = await request.json();
 
-        if (!user_email || !user_password) {
+        if (!user_name || !user_password) {
             return NextResponse.json(
-                { success: false, message: "Email and password are required." },
+                { success: false, message: "Username and password are required." },
                 { status: 400 }
             );
         }
 
         const [userRows] = await chatmate.query(
-            "SELECT user_id, user_name, user_email, user_password FROM User WHERE user_email = ?",
-            [user_email]
+            "SELECT user_id, user_name, user_password FROM User WHERE user_name = ?",
+            [user_name]
         );
 
         if (userRows.length === 0) {
             return NextResponse.json(
-                { success: false, message: "Invalid email or password." },
+                { success: false, message: "Invalid username or password." },
                 { status: 401 }
             );
         }
@@ -33,7 +33,7 @@ export async function POST(request) {
 
         if (!isPasswordValid) {
             return NextResponse.json(
-                { success: false, message: "Invalid email or password." },
+                { success: false, message: "Invalid username or password." },
                 { status: 401 }
             );
         }
@@ -45,7 +45,6 @@ export async function POST(request) {
                 data: {
                     user_id: authenticatedUser.user_id,
                     user_name: authenticatedUser.user_name,
-                    user_email: authenticatedUser.user_email,
                 },
             },
             { status: 200 }

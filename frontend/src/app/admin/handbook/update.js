@@ -88,7 +88,7 @@ export default function HandbookUpdate({ open, close, selectedHandbookRow, onUpd
 
     return (
         <main>
-            <div className={`fixed inset-0 bg-opacity-20 bg-black/30 backdrop-blur-xs transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`} onClick={close}></div>
+            <div className={`fixed inset-0 duration-300 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`} onClick={close}></div>
             <div className={`fixed top-0 right-0 h-full w-full md:w-[30%] bg-white border-l border-gray-200 transform transition-transform duration-300 ${open ? "translate-x-0" : "translate-x-full"}`}>
                 <div className="flex flex-col h-full p-5 space-y-4">
                     <div>
