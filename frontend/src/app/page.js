@@ -79,7 +79,7 @@ export default function Login() {
                     </div>
                     <h1 className="text-4xl font-bold text-[#205781] text-center">TLC ChatMate</h1>
                     <div className="relative w-40 h-40 sm:w-40 sm:h-40 md:w-50 md:h-50 lg:w-60 lg:h-60">
-                        <img className="drop-shadow-md object-contain" src="/favicon.png" alt="TLC ChatMate logo"/>
+                        <img className="drop-shadow-md object-contain" src="/favicon.ico" alt="TLC ChatMate logo"/>
                     </div>
                 </div>
 
