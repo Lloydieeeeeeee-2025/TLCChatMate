@@ -1,9 +1,9 @@
 import mysql from "mysql2/promise"
 
 export const chatmate = mysql.createPool({
-    host: process.env.DB_HOST || "localhost",
-    user: process.env.DB_USER || "root",
-    password: process.env.DB_PASSWORD || "kmlV3@VVVE$$56nnmh",
+    host: process.env.DB_HOST || "db",
+    user: process.env.DB_USER || "tlcuser",
+    password: process.env.DB_PASSWORD || "StrongAppPass123!",
     database: process.env.DB_NAME || "tlcchatmate",
     port: Number(process.env.DB_PORT) || 3306,
     waitForConnections: true,
