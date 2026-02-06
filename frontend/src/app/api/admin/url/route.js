@@ -6,7 +6,7 @@ import { chatmate } from "../../../../../library/tlcchatmatedb/route";
 export async function GET() {
     try {
 
-        const [rows] = await chatmate.execute("SELECT * FROM URL ORDER BY url_id DESC");
+        const [rows] = await chatmate.execute("SELECT * FROM url ORDER BY url_id DESC");
 
         return NextResponse.json({ success: true, data: rows });
     } catch (error) {
@@ -24,7 +24,7 @@ export async function POST(request) {
         }
 
         const [result] = await chatmate.execute(
-            "INSERT INTO URL (link_url, description) VALUES (?, ?)",
+            "INSERT INTO url (link_url, description) VALUES (?, ?)",
             [link_url, description || null]
         );
 
@@ -44,7 +44,7 @@ export async function PUT(request) {
         }
 
         await chatmate.execute(
-            "UPDATE URL SET link_url = ?, description = ? WHERE url_id = ?",
+            "UPDATE url SET link_url = ?, description = ? WHERE url_id = ?",
             [link_url, description || null, url_id]
         );
 
@@ -63,7 +63,7 @@ export async function DELETE(request) {
             return NextResponse.json({ success: false, message: "URL ID is required" }, { status: 400 });
         }
 
-        await chatmate.execute("DELETE FROM URL WHERE url_id = ?", [id]);
+        await chatmate.execute("DELETE FROM url WHERE url_id = ?", [id]);
 
 
         return NextResponse.json({ success: true, message: "URL deleted successfully" });

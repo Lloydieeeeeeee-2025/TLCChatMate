@@ -26,7 +26,7 @@ export async function POST(req) {
 
     const bytes = await handbookDocument.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const query = "INSERT INTO Handbook (handbook_document, handbook_name) VALUES (?, ?)";
+    const query = "INSERT INTO handbook (handbook_document, handbook_name) VALUES (?, ?)";
     const [result] = await chatmate.execute(query, [buffer, handbookName]);
 
     return NextResponse.json({ success: true, message: "Handbook uploaded successfully", data: { handbook_id: result.insertId } }, { status: 201 });
@@ -44,7 +44,7 @@ export async function GET(req) {
     const view = searchParams.get("view"); // 'active' or 'archived'
 
     if (handbookId) {
-      const query = "SELECT * FROM Handbook WHERE handbook_id = ?";
+      const query = "SELECT * FROM handbook WHERE handbook_id = ?";
       const [result] = await chatmate.execute(query, [handbookId]);
       if (result.length === 0) {
         return NextResponse.json({ success: false, message: "Handbook not found" }, { status: 404 });
@@ -58,9 +58,9 @@ export async function GET(req) {
 
     let query;
     if (view === "archived") {
-      query = "SELECT handbook_id, handbook_name, deleted_at FROM Handbook WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC";
+      query = "SELECT handbook_id, handbook_name, deleted_at FROM handbook WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC";
     } else {
-      query = "SELECT handbook_id, handbook_name FROM Handbook WHERE deleted_at IS NULL ORDER BY handbook_id DESC";
+      query = "SELECT handbook_id, handbook_name FROM handbook WHERE deleted_at IS NULL ORDER BY handbook_id DESC";
     }
 
     const [handbooks] = await chatmate.execute(query);
@@ -90,10 +90,10 @@ export async function PUT(req) {
       }
       const bytes = await handbookDocument.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      query = "UPDATE Handbook SET handbook_document = ?, handbook_name = ? WHERE handbook_id = ?";
+      query = "UPDATE handbook SET handbook_document = ?, handbook_name = ? WHERE handbook_id = ?";
       params = [buffer, handbookName, handbookId];
     } else {
-      query = "UPDATE Handbook SET handbook_name = ? WHERE handbook_id = ?";
+      query = "UPDATE handbook SET handbook_name = ? WHERE handbook_id = ?";
       params = [handbookName, handbookId];
     }
 
@@ -116,9 +116,9 @@ export async function PATCH(req) {
 
     let query;
     if (action === "archive") {
-      query = "UPDATE Handbook SET deleted_at = NOW() WHERE handbook_id = ?";
+      query = "UPDATE handbook SET deleted_at = NOW() WHERE handbook_id = ?";
     } else {
-      query = "UPDATE Handbook SET deleted_at = NULL WHERE handbook_id = ?";
+      query = "UPDATE handbook SET deleted_at = NULL WHERE handbook_id = ?";
     }
 
     const [result] = await chatmate.execute(query, [handbook_id]);
@@ -141,7 +141,7 @@ export async function DELETE(req) {
     if (!handbookId) {
       return NextResponse.json({ success: false, message: "Handbook ID is required" }, { status: 400 });
     }
-    const query = "DELETE FROM Handbook WHERE handbook_id = ?";
+    const query = "DELETE FROM handbook WHERE handbook_id = ?";
     await chatmate.execute(query, [handbookId]);
     return NextResponse.json({ success: true, message: "Handbook deleted permanently" }, { status: 200 });
   } catch (err) {

@@ -15,7 +15,7 @@ export async function POST(req) {
         const buffer = Buffer.from(bytes);
         const base64Document = buffer.toString("base64");
 
-        const query = "INSERT INTO Course (course_document, document_name) VALUES (?, ?)";
+        const query = "INSERT INTO course (course_document, document_name) VALUES (?, ?)";
         const [result] = await chatmate.query(query, [base64Document, documentName]);
 
         return NextResponse.json({ success: true, message: "Course uploaded successfully", data: { course_id: result.insertId } }, { status: 201 });
@@ -32,7 +32,7 @@ export async function GET(req) {
         const view = searchParams.get("view"); // 'active' or 'archived'
 
         if (courseId) {
-            const query = "SELECT * FROM Course WHERE course_id = ?";
+            const query = "SELECT * FROM course WHERE course_id = ?";
             const [result] = await chatmate.query(query, [courseId]);
             if (result.length === 0) {
                 return NextResponse.json({ success: false, message: "Course not found" }, { status: 404 });
@@ -44,9 +44,9 @@ export async function GET(req) {
 
         let query;
         if (view === "archived") {
-            query = "SELECT course_id, document_name, deleted_at FROM Course WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC";
+            query = "SELECT course_id, document_name, deleted_at FROM course WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC";
         } else {
-            query = "SELECT course_id, document_name FROM Course WHERE deleted_at IS NULL";
+            query = "SELECT course_id, document_name FROM course WHERE deleted_at IS NULL";
         }
 
         const [courses] = await chatmate.query(query);
@@ -73,10 +73,10 @@ export async function PUT(req) {
             const bytes = await courseDocument.arrayBuffer();
             const buffer = Buffer.from(bytes);
             const base64Document = buffer.toString("base64");
-            query = "UPDATE Course SET course_document = ?, document_name = ? WHERE course_id = ?";
+            query = "UPDATE course SET course_document = ?, document_name = ? WHERE course_id = ?";
             params = [base64Document, documentName, courseId];
         } else {
-            query = "UPDATE Course SET document_name = ? WHERE course_id = ?";
+            query = "UPDATE course SET document_name = ? WHERE course_id = ?";
             params = [documentName, courseId];
         }
 
@@ -99,9 +99,9 @@ export async function PATCH(req) {
 
         let query;
         if (action === "archive") {
-            query = "UPDATE Course SET deleted_at = NOW() WHERE course_id = ?";
+            query = "UPDATE course SET deleted_at = NOW() WHERE course_id = ?";
         } else {
-            query = "UPDATE Course SET deleted_at = NULL WHERE course_id = ?";
+            query = "UPDATE course SET deleted_at = NULL WHERE course_id = ?";
         }
 
         const [result] = await chatmate.query(query, [course_id]);
@@ -124,7 +124,7 @@ export async function DELETE(req) {
         if (!courseId) {
             return NextResponse.json({ success: false, message: "Course ID is required" }, { status: 400 });
         }
-        const query = "DELETE FROM Course WHERE course_id = ?";
+        const query = "DELETE FROM course WHERE course_id = ?";
         await chatmate.query(query, [courseId]);
         return NextResponse.json({ success: true, message: "Course deleted permanently" }, { status: 200 });
     } catch (err) {
