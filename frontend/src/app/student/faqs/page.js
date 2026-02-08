@@ -17,6 +17,31 @@ export default function FAQS() {
 
     const messagesEndRef = useRef(null);
 
+    // Initialize session on mount - only once
+    useEffect(() => {
+        const initializeSession = () => {
+            // Check localStorage for existing session ID for this device
+            const storedSessionId = localStorage.getItem('tlc_chatmate_session_id');
+            
+            let sessionId;
+            if (storedSessionId) {
+                // Use existing session for this device
+                sessionId = storedSessionId;
+                console.log('✓ Resuming existing session:', sessionId);
+            } else {
+                // Create new session for this device
+                sessionId = 'session_' + crypto.randomUUID();
+                localStorage.setItem('tlc_chatmate_session_id', sessionId);
+                console.log('✓ Created new session:', sessionId);
+            }
+            
+            setConversationSession(sessionId);
+        };
+
+        initializeSession();
+    }, []);
+
+    // Fetch FAQs
     useEffect(() => {
         const fetchFaqs = async () => {
             try {
@@ -39,18 +64,13 @@ export default function FAQS() {
         const checkLoginStatus = () => {
             const isLoggedIn = localStorage.getItem('isLoggedIn');
             if (isLoggedIn) {
-                console.log('User is logged in');
+                console.log('✓ User is logged in');
             }
         };
         checkLoginStatus();
     }, []);
 
-    useEffect(() => {
-        if (!conversationSession) {
-            setConversationSession('session_' + crypto.randomUUID());
-        }
-    }, [conversationSession]);
-
+    // Auto-scroll to latest message
     useEffect(() => {
         const timer = setTimeout(() => {
             if (messagesEndRef.current) {
@@ -106,14 +126,18 @@ export default function FAQS() {
     };
 
     const handlePreTypeQuestion = (question) => {
-        if (isLoading) return;
+        if (isLoading || !conversationSession) return;
         
-        // Truncate question to max 100 characters if it's from dynamic FAQs
         const truncatedQuestion = question.length > 100 ? question.substring(0, 97) + '...' : question;
         handleSubmitQuestion(truncatedQuestion);
     };
 
     const handleSubmitQuestion = async (questionText = null) => {
+        if (!conversationSession) {
+            console.error("✗ Session not initialized");
+            return;
+        }
+
         const userMessage = questionText || prompt.trim();
         if (userMessage === "" || isLoading) return;
 
@@ -126,15 +150,15 @@ export default function FAQS() {
 
         setIsLoading(true);
 
-        const sessionToUse = conversationSession;
-
         try {
+            console.log(`📤 Sending to session: ${conversationSession}`);
+            
             const response = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     prompt: userMessage,
-                    conversationSession: sessionToUse,
+                    conversationSession: conversationSession,
                 }),
             });
 
@@ -156,7 +180,7 @@ export default function FAQS() {
             }
 
         } catch (error) {
-            console.error("Error:", error);
+            console.error("✗ Error:", error);
             const errorMessage = {
                 type: 'ai',
                 content: "Sorry, there was an error processing your request. Please try again.",
@@ -182,6 +206,17 @@ export default function FAQS() {
         setShowPermissionModal(false);
         window.location.href = '/student/login';
     };
+
+    if (!conversationSession) {
+        return (
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#205781] border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-gray-600">Initializing chat session...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-white">
@@ -224,9 +259,8 @@ export default function FAQS() {
                                 </button>
                             ))
                         ) : (
-                            // Display message when no FAQs are available
                             <div className="text-center py-8 text-gray-500">
-                                
+                                No FAQs available at the moment.
                             </div>
                         )}
                     </div>
