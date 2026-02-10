@@ -1,6 +1,7 @@
 // app/api/admin/departments/route.js
 import { chatmate } from "../../../../../library/tlcchatmatedb/route";
 
+//
 export async function GET(request) {
     try {
         const [departments] = await chatmate.execute(
