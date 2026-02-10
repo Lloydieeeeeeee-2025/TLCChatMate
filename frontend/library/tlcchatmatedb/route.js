@@ -1,5 +1,6 @@
 import mysql from "mysql2/promise"
 
+
 export const chatmate = mysql.createPool({
     host: process.env.DB_HOST || "db",
     user: process.env.DB_USER || "tlcuser",
@@ -12,6 +13,7 @@ export const chatmate = mysql.createPool({
 });
 
 
+
 /*
 export const chatmate = mysql.createPool({
     host: "localhost",
@@ -21,6 +23,7 @@ export const chatmate = mysql.createPool({
     port: 3306,
 });
 */
+
 
 // latest wgen september 21, 2025
 {/*

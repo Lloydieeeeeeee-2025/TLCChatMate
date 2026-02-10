@@ -1,6 +1,9 @@
 import { chatmate } from "../../../../../library/tlcchatmatedb/route";
 import { NextResponse } from "next/server";
 
+const MAX_FILE_SIZE_MB = 100;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 export async function POST(req) {
     try {
         const formData = await req.formData();
@@ -9,6 +12,10 @@ export async function POST(req) {
 
         if (!courseDocument || !documentName) {
             return NextResponse.json({ success: false, message: "Course document and name are required" }, { status: 400 });
+        }
+
+        if (courseDocument.size > MAX_FILE_SIZE_BYTES) {
+            return NextResponse.json({ success: false, message: `File size must be less than ${MAX_FILE_SIZE_MB}MB` }, { status: 400 });
         }
 
         const bytes = await courseDocument.arrayBuffer();
@@ -21,6 +28,15 @@ export async function POST(req) {
         return NextResponse.json({ success: true, message: "Course uploaded successfully", data: { course_id: result.insertId } }, { status: 201 });
     } catch (err) {
         console.error("Error uploading course:", err);
+        
+        // Handle max_allowed_packet error specifically
+        if (err.code === 'ER_NET_PACKET_TOO_LARGE' || err.sqlMessage?.includes('max_allowed_packet')) {
+            return NextResponse.json({ 
+                success: false, 
+                message: "File is too large for the database. Please ensure MySQL max_allowed_packet is set to at least 256MB. Contact your system administrator." 
+            }, { status: 413 });
+        }
+        
         return NextResponse.json({ success: false, message: "Failed to upload course" }, { status: 500 });
     }
 }
@@ -44,9 +60,9 @@ export async function GET(req) {
 
         let query;
         if (view === "archived") {
-            query = "SELECT course_id, document_name, deleted_at FROM course WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC";
+            query = "SELECT course_id, document_name, archive_at FROM course WHERE archive_at IS NOT NULL ORDER BY archive_at DESC";
         } else {
-            query = "SELECT course_id, document_name FROM course WHERE deleted_at IS NULL";
+            query = "SELECT course_id, document_name FROM course WHERE archive_at IS NULL";
         }
 
         const [courses] = await chatmate.query(query);
@@ -70,6 +86,9 @@ export async function PUT(req) {
 
         let query, params;
         if (courseDocument) {
+            if (courseDocument.size > MAX_FILE_SIZE_BYTES) {
+                return NextResponse.json({ success: false, message: `File size must be less than ${MAX_FILE_SIZE_MB}MB` }, { status: 400 });
+            }
             const bytes = await courseDocument.arrayBuffer();
             const buffer = Buffer.from(bytes);
             const base64Document = buffer.toString("base64");
@@ -84,6 +103,15 @@ export async function PUT(req) {
         return NextResponse.json({ success: true, message: "Course updated successfully" }, { status: 200 });
     } catch (err) {
         console.error("Error updating course:", err);
+        
+        // Handle max_allowed_packet error specifically
+        if (err.code === 'ER_NET_PACKET_TOO_LARGE' || err.sqlMessage?.includes('max_allowed_packet')) {
+            return NextResponse.json({ 
+                success: false, 
+                message: "File is too large for the database. Please ensure MySQL max_allowed_packet is set to at least 256MB. Contact your system administrator." 
+            }, { status: 413 });
+        }
+        
         return NextResponse.json({ success: false, message: "Failed to update course" }, { status: 500 });
     }
 }
@@ -99,9 +127,9 @@ export async function PATCH(req) {
 
         let query;
         if (action === "archive") {
-            query = "UPDATE course SET deleted_at = NOW() WHERE course_id = ?";
+            query = "UPDATE course SET archive_at = NOW() WHERE course_id = ?";
         } else {
-            query = "UPDATE course SET deleted_at = NULL WHERE course_id = ?";
+            query = "UPDATE course SET archive_at = NULL WHERE course_id = ?";
         }
 
         const [result] = await chatmate.query(query, [course_id]);

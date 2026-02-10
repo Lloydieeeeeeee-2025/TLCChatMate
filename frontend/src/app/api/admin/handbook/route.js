@@ -4,6 +4,9 @@ import { NextResponse } from "next/server";
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
+const MAX_FILE_SIZE_MB = 100;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 async function parseFormData(req) {
   const formData = await req.formData();
   return formData;
@@ -20,18 +23,29 @@ export async function POST(req) {
       return NextResponse.json({ success: false, message: "Handbook document and name are required" }, { status: 400 });
     }
 
-    if (handbookDocument.size > 20 * 1024 * 1024) {
-      return NextResponse.json({ success: false, message: "File size must be less than 20MB" }, { status: 400 });
+    if (handbookDocument.size > MAX_FILE_SIZE_BYTES) {
+      return NextResponse.json({ success: false, message: `File size must be less than ${MAX_FILE_SIZE_MB}MB` }, { status: 400 });
     }
 
     const bytes = await handbookDocument.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const base64Document = buffer.toString("base64");
+
     const query = "INSERT INTO handbook (handbook_document, handbook_name) VALUES (?, ?)";
-    const [result] = await chatmate.execute(query, [buffer, handbookName]);
+    const [result] = await chatmate.query(query, [base64Document, handbookName]);
 
     return NextResponse.json({ success: true, message: "Handbook uploaded successfully", data: { handbook_id: result.insertId } }, { status: 201 });
   } catch (err) {
     console.error("Error uploading handbook:", err);
+
+    // Handle max_allowed_packet error specifically
+    if (err.code === 'ER_NET_PACKET_TOO_LARGE' || err.sqlMessage?.includes('max_allowed_packet')) {
+      return NextResponse.json({
+        success: false,
+        message: "File is too large for the database. Please ensure MySQL max_allowed_packet is set to at least 256MB. Contact your system administrator."
+      }, { status: 413 });
+    }
+
     return NextResponse.json({ success: false, message: "Failed to upload handbook: " + err.message }, { status: 500 });
   }
 }
@@ -45,25 +59,29 @@ export async function GET(req) {
 
     if (handbookId) {
       const query = "SELECT * FROM handbook WHERE handbook_id = ?";
-      const [result] = await chatmate.execute(query, [handbookId]);
+      const [result] = await chatmate.query(query, [handbookId]);
       if (result.length === 0) {
         return NextResponse.json({ success: false, message: "Handbook not found" }, { status: 404 });
       }
       let handbook = result[0];
       if (handbook.handbook_document) {
-        handbook.handbook_document = handbook.handbook_document.toString('base64');
+        // The handbook_document is already stored as base64 string in database
+        // Just convert Buffer to string if needed
+        if (Buffer.isBuffer(handbook.handbook_document)) {
+          handbook.handbook_document = handbook.handbook_document.toString('utf8');
+        }
       }
       return NextResponse.json({ success: true, data: handbook }, { status: 200 });
     }
 
     let query;
     if (view === "archived") {
-      query = "SELECT handbook_id, handbook_name, deleted_at FROM handbook WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC";
+      query = "SELECT handbook_id, handbook_name, archive_at FROM handbook WHERE archive_at IS NOT NULL ORDER BY archive_at DESC";
     } else {
-      query = "SELECT handbook_id, handbook_name FROM handbook WHERE deleted_at IS NULL ORDER BY handbook_id DESC";
+      query = "SELECT handbook_id, handbook_name FROM handbook WHERE archive_at IS NULL ORDER BY handbook_id DESC";
     }
 
-    const [handbooks] = await chatmate.execute(query);
+    const [handbooks] = await chatmate.query(query);
     return NextResponse.json({ success: true, data: handbooks }, { status: 200 });
   } catch (err) {
     console.error("Error fetching handbooks:", err);
@@ -85,22 +103,32 @@ export async function PUT(req) {
 
     let query, params;
     if (handbookDocument) {
-      if (handbookDocument.size > 20 * 1024 * 1024) {
-        return NextResponse.json({ success: false, message: "File size must be less than 20MB" }, { status: 400 });
+      if (handbookDocument.size > MAX_FILE_SIZE_BYTES) {
+        return NextResponse.json({ success: false, message: `File size must be less than ${MAX_FILE_SIZE_MB}MB` }, { status: 400 });
       }
       const bytes = await handbookDocument.arrayBuffer();
       const buffer = Buffer.from(bytes);
+      const base64Document = buffer.toString("base64");
       query = "UPDATE handbook SET handbook_document = ?, handbook_name = ? WHERE handbook_id = ?";
-      params = [buffer, handbookName, handbookId];
+      params = [base64Document, handbookName, handbookId];
     } else {
       query = "UPDATE handbook SET handbook_name = ? WHERE handbook_id = ?";
       params = [handbookName, handbookId];
     }
 
-    const [updateResult] = await chatmate.execute(query, params);
+    const [updateResult] = await chatmate.query(query, params);
     return NextResponse.json({ success: true, message: "Handbook updated successfully" }, { status: 200 });
   } catch (err) {
     console.error("Error updating handbook:", err);
+
+    // Handle max_allowed_packet error specifically
+    if (err.code === 'ER_NET_PACKET_TOO_LARGE' || err.sqlMessage?.includes('max_allowed_packet')) {
+      return NextResponse.json({
+        success: false,
+        message: "File is too large for the database. Please ensure MySQL max_allowed_packet is set to at least 256MB. Contact your system administrator."
+      }, { status: 413 });
+    }
+
     return NextResponse.json({ success: false, message: "Failed to update handbook" }, { status: 500 });
   }
 }
@@ -116,12 +144,12 @@ export async function PATCH(req) {
 
     let query;
     if (action === "archive") {
-      query = "UPDATE handbook SET deleted_at = NOW() WHERE handbook_id = ?";
+      query = "UPDATE handbook SET archive_at = NOW() WHERE handbook_id = ?";
     } else {
-      query = "UPDATE handbook SET deleted_at = NULL WHERE handbook_id = ?";
+      query = "UPDATE handbook SET archive_at = NULL WHERE handbook_id = ?";
     }
 
-    const [result] = await chatmate.execute(query, [handbook_id]);
+    const [result] = await chatmate.query(query, [handbook_id]);
     if (result.affectedRows === 0) {
       return NextResponse.json({ success: false, message: "Handbook not found" }, { status: 404 });
     }
@@ -142,7 +170,7 @@ export async function DELETE(req) {
       return NextResponse.json({ success: false, message: "Handbook ID is required" }, { status: 400 });
     }
     const query = "DELETE FROM handbook WHERE handbook_id = ?";
-    await chatmate.execute(query, [handbookId]);
+    await chatmate.query(query, [handbookId]);
     return NextResponse.json({ success: true, message: "Handbook deleted permanently" }, { status: 200 });
   } catch (err) {
     console.error("Error deleting handbook:", err);

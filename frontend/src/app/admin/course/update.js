@@ -1,6 +1,9 @@
 "use client"
 import { useState, useEffect } from "react"
 
+const MAX_FILE_SIZE_MB = 100;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 export default function Update({ open, close, selectedCourseRow, onUpdate }) {
     const [courseDocument, setCourseDocument] = useState(null)
     const [documentName, setDocumentName] = useState("")
@@ -25,8 +28,8 @@ export default function Update({ open, close, selectedCourseRow, onUpdate }) {
                 setCourseDocument(null)
                 return
             }
-            if (file.size > 15 * 1024 * 1024) {
-                setCourseDocumentError("File size must be less than 15MB")
+            if (file.size > MAX_FILE_SIZE_BYTES) {
+                setCourseDocumentError(`File size must be less than ${MAX_FILE_SIZE_MB}MB`)
                 setCourseDocument(null)
                 return
             }
@@ -116,8 +119,8 @@ export default function Update({ open, close, selectedCourseRow, onUpdate }) {
                                 <div className="space-y-2">
                                     <label htmlFor="courseDocument" className="block text-sm font-medium text-gray-700">Replace PDF Document (Optional)</label>
                                     <input type="file" id="courseDocument" name="courseDocument" accept=".pdf" onChange={handleFileChange} className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent rounded-lg" />
-                                    <p className="text-xs text-gray-500">Leave empty to keep the current document</p>
-                                    {courseDocument && <p className="text-sm text-gray-600">New file: {courseDocument.name}</p>}
+                                    <p className="text-xs text-gray-500">Leave empty to keep the current document (MAX. {MAX_FILE_SIZE_MB}MB)</p>
+                                    {courseDocument && <p className="text-sm text-gray-600">New file: {courseDocument.name} ({(courseDocument.size / 1024 / 1024).toFixed(2)} MB)</p>}
                                     {courseDocumentError && <span className="text-red-600 text-sm mt-1 block">{courseDocumentError}</span>}
                                 </div>
                             </div>

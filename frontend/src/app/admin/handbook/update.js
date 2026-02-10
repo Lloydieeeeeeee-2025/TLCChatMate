@@ -1,6 +1,9 @@
 "use client"
 import { useState, useEffect } from "react"
 
+const MAX_FILE_SIZE_MB = 100;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 export default function HandbookUpdate({ open, close, selectedHandbookRow, onUpdate }) {
     const [handbookDocument, setHandbookDocument] = useState(null)
     const [handbookName, setHandbookName] = useState("")
@@ -25,9 +28,9 @@ export default function HandbookUpdate({ open, close, selectedHandbookRow, onUpd
                 setHandbookDocument(null)
                 return
             }
-            // Increased file size limit to 20MB
-            if (file.size > 20 * 1024 * 1024) {
-                setHandbookDocumentError("File size must be less than 20MB")
+            // 100MB file size limit
+            if (file.size > MAX_FILE_SIZE_BYTES) {
+                setHandbookDocumentError(`File size must be less than ${MAX_FILE_SIZE_MB}MB`)
                 setHandbookDocument(null)
                 return
             }
@@ -117,7 +120,7 @@ export default function HandbookUpdate({ open, close, selectedHandbookRow, onUpd
                                 <div className="space-y-2">
                                     <label htmlFor="handbookDocument" className="block text-sm font-medium text-gray-700">Replace PDF Document (Optional)</label>
                                     <input type="file" id="handbookDocument" name="handbookDocument" accept=".pdf" onChange={handleFileChange} className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent rounded-lg" />
-                                    <p className="text-xs text-gray-500">Leave empty to keep the current document (MAX. 20MB)</p>
+                                    <p className="text-xs text-gray-500">Leave empty to keep the current document (MAX. {MAX_FILE_SIZE_MB}MB)</p>
                                     {handbookDocument && <p className="text-sm text-gray-600">New file: {handbookDocument.name} ({(handbookDocument.size / 1024 / 1024).toFixed(2)} MB)</p>}
                                     {handbookDocumentError && <span className="text-red-600 text-sm mt-1 block">{handbookDocumentError}</span>}
                                 </div>

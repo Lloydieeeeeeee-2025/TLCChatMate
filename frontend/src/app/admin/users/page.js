@@ -117,8 +117,6 @@ function UsersContent() {
                                                 <option value="">Sort by</option>
                                                 <option value="Name Ascending">Username (A-Z)</option>
                                                 <option value="Name Descending">Username (Z-A)</option>
-                                                <option value="ID Ascending">ID Ascending</option>
-                                                <option value="ID Descending">ID Descending</option>
                                             </select>
                                         </div>
                                     </div>

@@ -1,6 +1,9 @@
 "use client"
 import { useState } from "react"
 
+const MAX_FILE_SIZE_MB = 100;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 export default function HandbookCreate({ open, close, onHandbookCreated }) {
     const [handbookFile, setHandbookFile] = useState(null);
     const [fileName, setFileName] = useState("");
@@ -16,10 +19,10 @@ export default function HandbookCreate({ open, close, onHandbookCreated }) {
                 setFileName("");
                 return;
             }
-            
-            // Increased file size limit to 20MB
-            if (file.size > 20 * 1024 * 1024) {
-                setFileError("File size must be less than 20MB");
+
+            // 100MB file size limit
+            if (file.size > MAX_FILE_SIZE_BYTES) {
+                setFileError(`File size must be less than ${MAX_FILE_SIZE_MB}MB`);
                 setHandbookFile(null);
                 setFileName("");
                 return;
@@ -39,7 +42,7 @@ export default function HandbookCreate({ open, close, onHandbookCreated }) {
 
         try {
             setLoading(true);
-            
+
             const formData = new FormData();
             formData.append("handbook_document", handbookFile);
             formData.append("handbook_name", fileName);
@@ -96,7 +99,7 @@ export default function HandbookCreate({ open, close, onHandbookCreated }) {
                     </div>
                     <div className="flex flex-col h-full">
                         <div className="mb-4 w-full flex justify-between items-center">
-                            <h2 className="text-lg font-semibold mb-2">Update Document</h2>
+                            <h2 className="text-lg font-semibold mb-2">Upload New Document</h2>
                             <button onClick={close} className="text-gray-600 hover:text-black">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -111,10 +114,10 @@ export default function HandbookCreate({ open, close, onHandbookCreated }) {
                                         <label htmlFor="handbookFile" className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
                                             <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                                 <svg className="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                                                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                                                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
                                                 </svg>
                                                 <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                                                <p className="text-xs text-gray-500">PDF (MAX. 20MB)</p>
+                                                <p className="text-xs text-gray-500">PDF (MAX. {MAX_FILE_SIZE_MB}MB)</p>
                                             </div>
                                             <input id="handbookFile" type="file" className="hidden" accept=".pdf,application/pdf" onChange={handleFileChange} />
                                         </label>

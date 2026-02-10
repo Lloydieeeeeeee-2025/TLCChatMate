@@ -117,8 +117,6 @@ function FaqsContent() {
                                                 <option value="">Sort by</option>
                                                 <option value="Question Ascending">Question (A-Z)</option>
                                                 <option value="Question Descending">Question (Z-A)</option>
-                                                <option value="ID Ascending">ID Ascending</option>
-                                                <option value="ID Descending">ID Descending</option>
                                             </select>
                                         </div>
                                     </div>
