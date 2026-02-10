@@ -12,24 +12,21 @@ export default function FAQS() {
     const [conversationSession, setConversationSession] = useState(null);
     const [showPermissionModal, setShowPermissionModal] = useState(false);
     const [authIntent, setAuthIntent] = useState(null);
-    const [faqQuestions, setFaqQuestions] = useState([]);
+    const [faqsByDepartment, setFaqsByDepartment] = useState([]);
     const [faqsLoading, setFaqsLoading] = useState(true);
 
     const messagesEndRef = useRef(null);
 
-    // Initialize session on mount - only once
+    // Initialize session on mount
     useEffect(() => {
         const initializeSession = () => {
-            // Check localStorage for existing session ID for this device
             const storedSessionId = localStorage.getItem('tlc_chatmate_session_id');
             
             let sessionId;
             if (storedSessionId) {
-                // Use existing session for this device
                 sessionId = storedSessionId;
                 console.log('✓ Resuming existing session:', sessionId);
             } else {
-                // Create new session for this device
                 sessionId = 'session_' + crypto.randomUUID();
                 localStorage.setItem('tlc_chatmate_session_id', sessionId);
                 console.log('✓ Created new session:', sessionId);
@@ -41,15 +38,15 @@ export default function FAQS() {
         initializeSession();
     }, []);
 
-    // Fetch FAQs
+    // Fetch FAQs organized by department
     useEffect(() => {
         const fetchFaqs = async () => {
             try {
                 const response = await fetch("/api/admin/faqs");
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.success) {
-                        setFaqQuestions(data.data);
+                    if (data.success && data.data) {
+                        setFaqsByDepartment(data.data);
                     }
                 }
             } catch (error) {
@@ -220,105 +217,126 @@ export default function FAQS() {
 
     return (
         <div className="min-h-screen bg-white">
-            <Navigation />
+    <Navigation />
 
-            {showPermissionModal && (
-                <Permission onClose={handlePermissionClose} onContinue={handlePermissionContinue} intent={authIntent} />
-            )}
+    {showPermissionModal && (
+        <Permission onClose={handlePermissionClose} onContinue={handlePermissionContinue} intent={authIntent} />
+    )}
 
-            <main className="transition-all duration-300 ease-in-out pt-[90px] pb-32">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center my-8 sm:my-12 space-y-6 sm:space-y-8">
-                        <div className="space-y-3 sm:space-y-4">
-                            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-medium text-gray-600 leading-tight px-2">
-                                Good day! How may I assist you today?
-                            </h2>
-                            <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4 leading-relaxed">
-                                You can select from the options below or feel free to type your questions.
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Dynamic FAQ List from admin */}
-                    <div className="max-w-3xl mx-auto space-y-3 px-4 sm:px-6">
-                        {faqsLoading ? (
-                            <div className="flex justify-center py-8">
-                                <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#205781] border-t-transparent"></div>
-                            </div>
-                        ) : faqQuestions.length > 0 ? (
-                            faqQuestions.slice(0, 10).map((faq, index) => (
-                                <button
-                                    key={faq.faq_id}
-                                    onClick={() => handlePreTypeQuestion(faq.question)}
-                                    disabled={isLoading}
-                                    className="block w-full text-left p-4 rounded-xl bg-white/80 backdrop-blur-sm border border-gray-200 hover:border-[#205781]/30 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#205781]/30 focus:ring-offset-2 disabled:opacity-50"
-                                >
-                                    <div className="font-semibold text-gray-900">
-                                        {faq.question.length > 100 ? faq.question.substring(0, 100) + '...' : faq.question}
-                                    </div>
-                                </button>
-                            ))
-                        ) : (
-                            <div className="text-center py-8 text-gray-500">
-                                No FAQs available at the moment.
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="space-y-4 mt-8 max-w-3xl mx-auto px-4 sm:px-6">
-                        {messages.map((message) => {
-                            if (message.type === 'user') {
-                                return <UserMessage key={message.id} message={message.content} />;
-                            }
-                            if (message.type === 'ai') {
-                                return <AIMessage key={message.id} message={message.content} />;
-                            }
-                            return null;
-                        })}
-                        {isLoading && (
-                            <div className="flex justify-start mb-6">
-                                <div className="max-w-[85%] sm:max-w-[75%] bg-white/80 backdrop-blur-sm rounded-2xl rounded-bl-md px-5 py-3.5 shadow-md border border-gray-100">
-                                    <div className="flex items-center space-x-2">
-                                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#205781] border-t-transparent"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                        
-                        <div ref={messagesEndRef} />
-                    </div>
-                </div>
-            </main>
-
-            <div className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-black/95 backdrop-blur-md border-t-2 border-gray-200 dark:border-gray-700 shadow-xl z-30">
-                <div className="transition-all duration-300 ease-in-out">
-                    <div className="max-w-5xl mx-auto p-3 sm:p-4 lg:p-5">
-                        <form onSubmit={submit} className="relative">
-                            <input
-                                className="w-full border-2 border-gray-300 dark:border-gray-600 rounded-2xl py-3.5 sm:py-4 px-4 sm:px-6 pr-20 sm:pr-24 focus:ring-4 focus:outline-none focus:ring-[#205781]/10 focus:border-[#205781] text-sm sm:text-base placeholder-gray-500 dark:placeholder-gray-400 bg-white dark:bg-gray-800 dark:text-white transition-all duration-200 shadow-sm"
-                                value={prompt}
-                                onChange={handleInputChange}
-                                onPaste={handlePaste}
-                                placeholder="Ask here..."
-                                disabled={isLoading}
-                                maxLength={100}
-                            />
-                            <div className="absolute right-14 sm:right-16 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-gray-500 font-medium">
-                                {prompt.length}/100
-                            </div>
-                            <button
-                                className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 p-2.5 sm:p-3 text-white bg-[#205781] hover:bg-[#1a4660] rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg disabled:hover:bg-[#205781]"
-                                type="submit"
-                                disabled={isLoading || !prompt.trim()}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 sm:w-5 sm:h-5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
-                                </svg>
-                            </button>
-                        </form>
-                    </div>
+    <main className="transition-all duration-300 ease-in-out pt-[90px] pb-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center my-8 sm:my-12 space-y-6 sm:space-y-8">
+                <div className="space-y-3 sm:space-y-4">
+                    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-medium text-gray-600 leading-tight px-2">
+                        Good day! How may I assist you today?
+                    </h2>
+                    <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4 leading-relaxed">
+                        You can select from the options below or feel free to type your questions.
+                    </p>
                 </div>
             </div>
+
+            {/* FAQ Cards organized by Department */}
+            <div className="mb-12">
+                {faqsLoading ? (
+                    <div className="flex justify-center py-12">
+                        <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#205781] border-t-transparent"></div>
+                    </div>
+                ) : faqsByDepartment && faqsByDepartment.length > 0 ? (
+                    <div className="overflow-x-auto lg:overflow-visible pb-4">
+                        <div className="flex gap-6 min-w-max lg:flex-wrap lg:justify-center lg:min-w-0 px-4 sm:px-6">
+                            {faqsByDepartment.map((dept) => (
+                                <div 
+                                    key={dept.department_id} 
+                                    className="border border-gray-200 rounded-xl p-5 w-72 lg:w-80 xl:w-72 flex-shrink-0 bg-white hover:border-[#205781]/20 transition-all duration-200 shadow-sm hover:shadow-md"
+                                >
+                                    <h2 className="font-semibold text-center mb-4 text-gray-800 text-sm sm:text-base line-clamp-2">
+                                        {dept.department_name || "General"}
+                                    </h2>
+                                    <div className="space-y-2.5 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                                        {dept.faqs && dept.faqs.length > 0 ? (
+                                            dept.faqs.map((faq) => (
+                                                <button
+                                                    key={faq.faq_id}
+                                                    onClick={() => handlePreTypeQuestion(faq.full_question)}
+                                                    disabled={isLoading}
+                                                    className="w-full bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-gray-600 text-xs sm:text-sm px-4 py-2.5 rounded-lg transition-all duration-200 text-left line-clamp-2 font-medium shadow-sm hover:shadow-md border border-gray-200"
+                                                    title={faq.full_question}
+                                                >
+                                                    {faq.question}
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <p className="text-sm text-gray-400 text-center py-4">No FAQs available</p>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="text-center py-12 text-gray-500">
+                        <p className="text-lg">No FAQs available at the moment.</p>
+                    </div>
+                )}
+            </div>
+
+            {/* Chat Messages */}
+            <div className="space-y-4 max-w-3xl mx-auto px-4 sm:px-6">
+                {messages.map((message) => {
+                    if (message.type === 'user') {
+                        return <UserMessage key={message.id} message={message.content} />;
+                    }
+                    if (message.type === 'ai') {
+                        return <AIMessage key={message.id} message={message.content} />;
+                    }
+                    return null;
+                })}
+                {isLoading && (
+                    <div className="flex justify-start mb-6">
+                        <div className="max-w-[85%] sm:max-w-[75%] bg-white/90 backdrop-blur-sm rounded-2xl rounded-bl-md px-5 py-3.5 shadow-sm border border-gray-100">
+                            <div className="flex items-center space-x-2">
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#205781] border-t-transparent"></div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                
+                <div ref={messagesEndRef} />
+            </div>
         </div>
+    </main>
+
+    {/* Chat Input */}
+    <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-lg z-30">
+        <div className="transition-all duration-300 ease-in-out">
+            <div className="max-w-5xl mx-auto p-3 sm:p-4 lg:p-5">
+                <form onSubmit={submit} className="relative">
+                    <input
+                        className="w-full border border-gray-300 rounded-2xl py-3.5 sm:py-4 px-4 sm:px-6 pr-20 sm:pr-24 focus:ring-2 focus:outline-none focus:ring-[#205781]/10 focus:border-[#205781] text-sm sm:text-base placeholder-gray-500 bg-white transition-all duration-200 shadow-sm"
+                        value={prompt}
+                        onChange={handleInputChange}
+                        onPaste={handlePaste}
+                        placeholder="Ask here..."
+                        disabled={isLoading}
+                        maxLength={100}
+                    />
+                    <div className="absolute right-14 sm:right-16 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium bg-white rounded px-1 py-0.5">
+                        {prompt.length}/100
+                    </div>
+                    <button
+                        className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 p-2.5 sm:p-3 text-[#205781] bg-white hover:bg-gray-50 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md border border-[#205781]/20"
+                        type="submit"
+                        disabled={isLoading || !prompt.trim()}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 sm:w-5 sm:h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
     );
 }

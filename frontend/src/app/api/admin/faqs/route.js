@@ -3,18 +3,62 @@ import { chatmate } from "../../../../../library/tlcchatmatedb/route";
 
 export async function GET(request) {
     try {
-        const [faqs] = await chatmate.execute(
-            "SELECT faq_id, question FROM faqs ORDER BY faq_id DESC"
-        );
+        const { searchParams } = new URL(request.url);
+        const departmentId = searchParams.get("department_id");
 
-        const truncatedFaqs = faqs.map(faq => ({
-            ...faq,
-            question: faq.question.length > 100 ? faq.question.substring(0, 100) + '...' : faq.question
-        }));
+        let query = `SELECT 
+                f.faq_id, 
+                f.question, 
+                f.department_id,
+                d.department_name
+            FROM faqs f
+            LEFT JOIN departments d ON f.department_id = d.department_id`;
+        
+        let params = [];
+
+        if (departmentId) {
+            query += " WHERE f.department_id = ?";
+            params.push(parseInt(departmentId));
+        }
+
+        query += " ORDER BY f.created_at DESC";
+
+        const [faqs] = await chatmate.execute(query, params);
+
+        // If requesting specific department, return flat list
+        if (departmentId) {
+            return Response.json({
+                success: true,
+                data: faqs
+            });
+        }
+
+        // Otherwise return grouped by department
+        const faqsByDepartment = {};
+        faqs.forEach(faq => {
+            const deptName = faq.department_name || "General";
+            const deptId = faq.department_id || 0;
+            
+            if (!faqsByDepartment[deptId]) {
+                faqsByDepartment[deptId] = {
+                    department_id: deptId,
+                    department_name: deptName,
+                    faqs: []
+                };
+            }
+            
+            faqsByDepartment[deptId].faqs.push({
+                faq_id: faq.faq_id,
+                question: faq.question,
+                full_question: faq.question
+            });
+        });
+
+        const groupedData = Object.values(faqsByDepartment);
 
         return Response.json({
             success: true,
-            data: truncatedFaqs
+            data: groupedData
         });
     } catch (error) {
         console.error("Error fetching FAQs:", error);
@@ -27,7 +71,7 @@ export async function GET(request) {
 
 export async function POST(request) {
     try {
-        const { question } = await request.json();
+        const { question, department_id } = await request.json();
 
         // Validate input
         if (!question || question.trim() === "") {
@@ -37,38 +81,49 @@ export async function POST(request) {
             );
         }
 
-        if (question.length > 100) {
+        if (question.length > 500) {
             return Response.json(
-                { success: false, message: "Question must be 100 characters or less" },
+                { success: false, message: "Question must be 500 characters or less" },
+                { status: 400 }
+            );
+        }
+
+        if (!department_id) {
+            return Response.json(
+                { success: false, message: "Department is required" },
                 { status: 400 }
             );
         }
 
         const trimmedQuestion = question.trim();
 
-        // Check if question already exists
+        // Check if question already exists in the same department
         const [existing] = await chatmate.execute(
-            "SELECT faq_id FROM faqs WHERE question = ?",
-            [trimmedQuestion]
+            "SELECT faq_id FROM faqs WHERE LOWER(question) = LOWER(?) AND department_id = ?",
+            [trimmedQuestion, department_id]
         );
 
         if (existing.length > 0) {
             return Response.json(
-                { success: false, message: "Question already exists" },
+                { success: false, message: "Question already exists in this department" },
                 { status: 409 }
             );
         }
 
         // Insert new FAQ
         const [result] = await chatmate.execute(
-            "INSERT INTO faqs (question) VALUES (?)",
-            [trimmedQuestion]
+            "INSERT INTO faqs (question, department_id) VALUES (?, ?)",
+            [trimmedQuestion, department_id]
         );
 
         return Response.json({
             success: true,
             message: "FAQ created successfully",
-            data: { faq_id: result.insertId, question: trimmedQuestion }
+            data: { 
+                faq_id: result.insertId, 
+                question: trimmedQuestion,
+                department_id: department_id
+            }
         });
 
     } catch (error) {
@@ -82,7 +137,7 @@ export async function POST(request) {
 
 export async function PUT(request) {
     try {
-        const { faq_id, question } = await request.json();
+        const { faq_id, question, department_id } = await request.json();
 
         if (!faq_id || !question || question.trim() === "") {
             return Response.json(
@@ -91,9 +146,9 @@ export async function PUT(request) {
             );
         }
 
-        if (question.length > 100) {
+        if (question.length > 500) {
             return Response.json(
-                { success: false, message: "Question must be 100 characters or less" },
+                { success: false, message: "Question must be 500 characters or less" },
                 { status: 400 }
             );
         }
@@ -115,8 +170,8 @@ export async function PUT(request) {
 
         // Check for duplicate (excluding current)
         const [duplicate] = await chatmate.execute(
-            "SELECT faq_id FROM faqs WHERE question = ? AND faq_id != ?",
-            [trimmedQuestion, faq_id]
+            "SELECT faq_id FROM faqs WHERE LOWER(question) = LOWER(?) AND faq_id != ? AND department_id = ?",
+            [trimmedQuestion, faq_id, department_id]
         );
 
         if (duplicate.length > 0) {
@@ -128,8 +183,8 @@ export async function PUT(request) {
 
         // Update FAQ
         await chatmate.execute(
-            "UPDATE faqs SET question = ? WHERE faq_id = ?",
-            [trimmedQuestion, faq_id]
+            "UPDATE faqs SET question = ?, department_id = ? WHERE faq_id = ?",
+            [trimmedQuestion, department_id, faq_id]
         );
 
         return Response.json({
@@ -148,9 +203,7 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
     try {
-        const { faq_id, id } = await request.json(); // ✅ Accept both fields
-
-        // Use faq_id if provided, otherwise fall back to id
+        const { faq_id, id } = await request.json();
         const targetId = faq_id || id;
 
         if (!targetId) {
