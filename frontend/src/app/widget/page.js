@@ -2,15 +2,12 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import ReactMarkdown from "react-markdown";
-import Permission from '../permission';
 
 export default function ChatWidget() {
     const [prompt, setPrompt] = useState("");
     const [messages, setMessages] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [conversationSession, setConversationSession] = useState(null);
-    const [showPermissionModal, setShowPermissionModal] = useState(false);
-    const [authIntent, setAuthIntent] = useState(null);
     const [faqsByDepartment, setFaqsByDepartment] = useState([]);
     const [faqsLoading, setFaqsLoading] = useState(true);
 
@@ -56,14 +53,6 @@ export default function ChatWidget() {
         };
 
         fetchFaqs();
-
-        const checkLoginStatus = () => {
-            const isLoggedIn = localStorage.getItem('isLoggedIn');
-            if (isLoggedIn) {
-                console.log('✓ User is logged in');
-            }
-        };
-        checkLoginStatus();
     }, []);
 
     // Auto-scroll to latest message
@@ -164,16 +153,10 @@ export default function ChatWidget() {
                 throw new Error(data.error || 'Failed to get response');
             }
 
-            if (data.requires_auth) {
-                setAuthIntent(data.intent);
-                setShowPermissionModal(true);
-                setMessages(prev => prev.filter(msg => msg.id !== newUserMessage.id));
-            } else {
-                const aiResponse = data.response || "I don't have enough information to answer that question. Please visit The Lewis College for more details.";
+            const aiResponse = data.response || "I don't have enough information to answer that question. Please visit The Lewis College for more details.";
 
-                const newAIMessage = { type: 'ai', content: aiResponse, id: Date.now() + 1 };
-                setMessages(prev => [...prev, newAIMessage]);
-            }
+            const newAIMessage = { type: 'ai', content: aiResponse, id: Date.now() + 1 };
+            setMessages(prev => [...prev, newAIMessage]);
 
         } catch (error) {
             console.error("✗ Error:", error);
@@ -193,16 +176,6 @@ export default function ChatWidget() {
         handleSubmitQuestion();
     };
 
-    const handlePermissionClose = () => {
-        setShowPermissionModal(false);
-        setAuthIntent(null);
-    };
-
-    const handlePermissionContinue = () => {
-        setShowPermissionModal(false);
-        window.location.href = '/student/login';
-    };
-
     if (!conversationSession) {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
@@ -216,10 +189,6 @@ export default function ChatWidget() {
 
     return (
         <div className="min-h-screen bg-white flex flex-col">
-            {showPermissionModal && (
-                <Permission onClose={handlePermissionClose} onContinue={handlePermissionContinue} intent={authIntent} />
-            )}
-
             {/* Header */}
             <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-2">
                 <img className="object-contain h-7 w-auto" src="/favicon.ico" alt="TLC Logo" />
