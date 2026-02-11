@@ -38,7 +38,6 @@ export async function POST(req) {
             );
         }
 
-        // If FastAPI returns JSON like { answer: "...", session_id: "..." }
         let data;
         try {
             data = JSON.parse(text);

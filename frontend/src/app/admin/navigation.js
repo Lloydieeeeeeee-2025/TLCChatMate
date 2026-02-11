@@ -103,16 +103,17 @@ export default function Navigation() {
                                 <span className="text-lg sm:text-xl font-bold text-[#205781]">TLC ChatMate</span>
                             </div>
                         </div>
-
+                
                         {/* User dropdown */}
-                        <div className="relative">
+                        <div className="flex relative">
+                            <button>apply changes</button>
                             <button type="button" onClick={toggleDropdown} className="flex items-center gap-2 p-1.5 rounded-full hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#205781]/20 transition-all duration-200">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" />
                                 </svg>
-
                             </button>
 
+                            
                             {dropdownOpen && (
                                 <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
                                     <div className="p-4 border-b border-gray-100">
@@ -144,6 +145,7 @@ export default function Navigation() {
                                     </div>
                                 </div>
                             )}
+                            
                         </div>
                     </div>
                 </div>

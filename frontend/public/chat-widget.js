@@ -41,7 +41,7 @@
             #${WIDGET_CONFIG.containerId} {
                 position: fixed;
                 bottom: 20px;
-                left: 20px;
+                right: 20px;
                 z-index: ${WIDGET_CONFIG.zIndex};
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
                 direction: ltr;
@@ -93,7 +93,7 @@
             #${WIDGET_CONFIG.iframeId} {
                 position: fixed;
                 bottom: ${WIDGET_CONFIG.buttonSize + 30}px;
-                left: 20px;
+                right: 20px;
                 width: ${WIDGET_CONFIG.width}px;
                 height: ${WIDGET_CONFIG.height}px;
                 border: none;
@@ -117,14 +117,14 @@
             @media (max-width: 480px) {
                 #${WIDGET_CONFIG.containerId} {
                     bottom: 10px;
-                    left: 10px;
+                    right: 10px;
                     right: 10px;
                 }
 
                 #${WIDGET_CONFIG.iframeId} {
                     width: calc(100% - 20px);
                     height: ${WIDGET_CONFIG.height}px;
-                    left: 10px;
+                    right: 10px;
                     bottom: ${WIDGET_CONFIG.buttonSize + 20}px;
                     border-radius: 12px;
                 }

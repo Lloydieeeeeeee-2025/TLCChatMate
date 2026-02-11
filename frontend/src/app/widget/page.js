@@ -2,13 +2,16 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import ReactMarkdown from "react-markdown";
+import Permission from '../permission';
 
 export default function ChatWidget() {
     const [prompt, setPrompt] = useState("");
     const [messages, setMessages] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [conversationSession, setConversationSession] = useState(null);
-    const [faqQuestions, setFaqQuestions] = useState([]);
+    const [showPermissionModal, setShowPermissionModal] = useState(false);
+    const [authIntent, setAuthIntent] = useState(null);
+    const [faqsByDepartment, setFaqsByDepartment] = useState([]);
     const [faqsLoading, setFaqsLoading] = useState(true);
 
     const messagesEndRef = useRef(null);
@@ -34,15 +37,15 @@ export default function ChatWidget() {
         initializeSession();
     }, []);
 
-    // Fetch FAQs
+    // Fetch FAQs organized by department
     useEffect(() => {
         const fetchFaqs = async () => {
             try {
                 const response = await fetch("/api/admin/faqs");
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.success) {
-                        setFaqQuestions(data.data);
+                    if (data.success && data.data) {
+                        setFaqsByDepartment(data.data);
                     }
                 }
             } catch (error) {
@@ -53,6 +56,14 @@ export default function ChatWidget() {
         };
 
         fetchFaqs();
+
+        const checkLoginStatus = () => {
+            const isLoggedIn = localStorage.getItem('isLoggedIn');
+            if (isLoggedIn) {
+                console.log('✓ User is logged in');
+            }
+        };
+        checkLoginStatus();
     }, []);
 
     // Auto-scroll to latest message
@@ -80,7 +91,7 @@ export default function ChatWidget() {
     const UserMessage = ({ message }) => {
         return (
             <div className="flex justify-end mb-6">
-                <div className="max-w-[85%] bg-gradient-to-br from-[#205781] to-[#2a6ba0] text-white rounded-2xl rounded-br-md px-5 py-3.5 shadow-lg">
+                <div className="max-w-[85%] sm:max-w-[75%] bg-gradient-to-br from-[#205781] to-[#2a6ba0] text-white rounded-2xl rounded-br-md px-5 py-3.5 shadow-lg">
                     <div className="text-sm leading-relaxed">{message}</div>
                 </div>
             </div>
@@ -90,7 +101,7 @@ export default function ChatWidget() {
     const AIMessage = ({ message }) => {
         return (
             <div className="flex justify-start mb-6">
-                <div className="max-w-[85%] bg-white/80 backdrop-blur-sm rounded-2xl rounded-bl-md px-5 py-3.5 shadow-md border border-gray-100">
+                <div className="max-w-[85%] sm:max-w-[75%] bg-white/80 backdrop-blur-sm rounded-2xl rounded-bl-md px-5 py-3.5 shadow-md border border-gray-100">
                     <div className="text-sm text-gray-600 prose prose-sm max-w-none leading-relaxed">
                         <ReactMarkdown components={{
                             p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
@@ -153,10 +164,16 @@ export default function ChatWidget() {
                 throw new Error(data.error || 'Failed to get response');
             }
 
-            const aiResponse = data.response || "I don't have enough information to answer that question. Please visit The Lewis College for more details.";
+            if (data.requires_auth) {
+                setAuthIntent(data.intent);
+                setShowPermissionModal(true);
+                setMessages(prev => prev.filter(msg => msg.id !== newUserMessage.id));
+            } else {
+                const aiResponse = data.response || "I don't have enough information to answer that question. Please visit The Lewis College for more details.";
 
-            const newAIMessage = { type: 'ai', content: aiResponse, id: Date.now() + 1 };
-            setMessages(prev => [...prev, newAIMessage]);
+                const newAIMessage = { type: 'ai', content: aiResponse, id: Date.now() + 1 };
+                setMessages(prev => [...prev, newAIMessage]);
+            }
 
         } catch (error) {
             console.error("✗ Error:", error);
@@ -176,6 +193,16 @@ export default function ChatWidget() {
         handleSubmitQuestion();
     };
 
+    const handlePermissionClose = () => {
+        setShowPermissionModal(false);
+        setAuthIntent(null);
+    };
+
+    const handlePermissionContinue = () => {
+        setShowPermissionModal(false);
+        window.location.href = '/student/login';
+    };
+
     if (!conversationSession) {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
@@ -189,6 +216,10 @@ export default function ChatWidget() {
 
     return (
         <div className="min-h-screen bg-white flex flex-col">
+            {showPermissionModal && (
+                <Permission onClose={handlePermissionClose} onContinue={handlePermissionContinue} intent={authIntent} />
+            )}
+
             {/* Header */}
             <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-2">
                 <img className="object-contain h-7 w-auto" src="/favicon.ico" alt="TLC Logo" />
@@ -203,69 +234,96 @@ export default function ChatWidget() {
                     {/* Welcome Message */}
                     {messages.length === 0 && (
                         <div className="text-center my-8 space-y-4">
-                            <h2 className="text-xl font-medium text-gray-600">
-                                How may I assist you?
-                            </h2>
-                            <p className="text-sm text-gray-500">
-                                Select a question or type your own
-                            </p>
-                        </div>
-                    )}
-
-                    {/* FAQ Questions */}
-                    {messages.length === 0 && (
-                        <div className="space-y-2">
-                            {faqsLoading ? (
-                                <div className="flex justify-center py-6">
-                                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-[#205781] border-t-transparent"></div>
-                                </div>
-                            ) : faqQuestions.length > 0 ? (
-                                faqQuestions.slice(0, 5).map((faq) => (
-                                    <button
-                                        key={faq.faq_id}
-                                        onClick={() => handlePreTypeQuestion(faq.question)}
-                                        disabled={isLoading}
-                                        className="block w-full text-left p-3 rounded-lg bg-white/60 border border-gray-200 hover:border-[#205781]/30 hover:shadow-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#205781]/30 disabled:opacity-50 text-sm"
-                                    >
-                                        <div className="font-medium text-gray-800">
-                                            {faq.question.length > 60 ? faq.question.substring(0, 60) + '...' : faq.question}
-                                        </div>
-                                    </button>
-                                ))
-                            ) : null}
-                        </div>
-                    )}
-
-                    {/* Chat Messages */}
-                    {messages.map((message) => {
-                        if (message.type === 'user') {
-                            return <UserMessage key={message.id} message={message.content} />;
-                        }
-                        if (message.type === 'ai') {
-                            return <AIMessage key={message.id} message={message.content} />;
-                        }
-                        return null;
-                    })}
-
-                    {isLoading && (
-                        <div className="flex justify-start">
-                            <div className="max-w-[85%] bg-white/80 rounded-2xl rounded-bl-md px-5 py-3.5 shadow-md border border-gray-100">
-                                <div className="flex items-center space-x-2">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#205781] border-t-transparent"></div>
-                                </div>
+                            <div className="space-y-3 sm:space-y-4">
+                                <h2 className="text-xl sm:text-2xl font-medium text-gray-600">
+                                    Good day! How may I assist you today?
+                                </h2>
+                                <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto px-4 leading-relaxed">
+                                    You can select from the options below or feel free to type your questions.
+                                </p>
                             </div>
                         </div>
                     )}
 
-                    <div ref={messagesEndRef} />
+                    {/* FAQ Cards organized by Department */}
+                    {messages.length === 0 && (
+                        <div className="mb-12">
+                            {faqsLoading ? (
+                                <div className="flex justify-center py-12">
+                                    <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#205781] border-t-transparent"></div>
+                                </div>
+                            ) : faqsByDepartment && faqsByDepartment.length > 0 ? (
+                                <div className="overflow-x-auto lg:overflow-visible pb-4">
+                                    <div className="flex gap-6 min-w-max lg:flex-wrap lg:justify-center lg:min-w-0 px-4 sm:px-6">
+                                        {faqsByDepartment.map((dept) => (
+                                            <div
+                                                key={dept.department_id}
+                                                className="border border-gray-200 rounded-xl p-5 w-72 lg:w-80 xl:w-72 flex-shrink-0 bg-white hover:border-[#205781]/20 transition-all duration-200 shadow-sm hover:shadow-md"
+                                            >
+                                                <h2 className="font-semibold text-center mb-4 text-gray-800 text-sm sm:text-base line-clamp-2">
+                                                    {dept.department_name || "General"}
+                                                </h2>
+                                                <div className="space-y-2.5 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                                                    {dept.faqs && dept.faqs.length > 0 ? (
+                                                        dept.faqs.map((faq) => (
+                                                            <button
+                                                                key={faq.faq_id}
+                                                                onClick={() => handlePreTypeQuestion(faq.full_question)}
+                                                                disabled={isLoading}
+                                                                className="w-full bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-gray-600 text-xs sm:text-sm px-4 py-2.5 rounded-lg transition-all duration-200 text-left line-clamp-2 font-medium shadow-sm hover:shadow-md border border-gray-200"
+                                                                title={faq.full_question}
+                                                            >
+                                                                {faq.question}
+                                                            </button>
+                                                        ))
+                                                    ) : (
+                                                        <p className="text-sm text-gray-400 text-center py-4">No FAQs available</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center py-12 text-gray-500">
+                                    <p className="text-lg">No FAQs available at the moment.</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Chat Messages */}
+                    <div className="space-y-4">
+                        {messages.map((message) => {
+                            if (message.type === 'user') {
+                                return <UserMessage key={message.id} message={message.content} />;
+                            }
+                            if (message.type === 'ai') {
+                                return <AIMessage key={message.id} message={message.content} />;
+                            }
+                            return null;
+                        })}
+
+                        {isLoading && (
+                            <div className="flex justify-start mb-6">
+                                <div className="max-w-[85%] sm:max-w-[75%] bg-white/90 backdrop-blur-sm rounded-2xl rounded-bl-md px-5 py-3.5 shadow-sm border border-gray-100">
+                                    <div className="flex items-center space-x-2">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#205781] border-t-transparent"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div ref={messagesEndRef} />
+                    </div>
                 </div>
             </main>
 
             {/* Input Area */}
-            <div className="bg-white border-t border-gray-200 p-3">
+            <div className="bg-white border-t border-gray-200 p-3 sm:p-4">
                 <form onSubmit={submit} className="relative">
                     <input
-                        className="w-full border-2 border-gray-300 rounded-xl py-3 px-4 pr-14 focus:ring-2 focus:outline-none focus:ring-[#205781]/20 focus:border-[#205781] text-sm placeholder-gray-500 bg-white transition-all duration-200"
+                        className="w-full border border-gray-300 rounded-2xl py-3.5 sm:py-4 px-4 sm:px-6 pr-20 sm:pr-24 focus:ring-2 focus:outline-none focus:ring-[#205781]/10 focus:border-[#205781] text-sm sm:text-base placeholder-gray-500 bg-white transition-all duration-200 shadow-sm"
                         value={prompt}
                         onChange={handleInputChange}
                         onPaste={handlePaste}
@@ -273,15 +331,15 @@ export default function ChatWidget() {
                         disabled={isLoading}
                         maxLength={100}
                     />
-                    <div className="absolute right-12 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium">
+                    <div className="absolute right-14 sm:right-16 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium bg-white rounded px-1 py-0.5">
                         {prompt.length}/100
                     </div>
                     <button
-                        className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 text-white bg-[#205781] hover:bg-[#1a4660] rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 p-2.5 sm:p-3 text-[#205781] bg-white hover:bg-gray-50 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md border border-[#205781]/20"
                         type="submit"
                         disabled={isLoading || !prompt.trim()}
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 sm:w-5 sm:h-5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
                         </svg>
                     </button>
