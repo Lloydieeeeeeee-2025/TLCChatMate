@@ -13,7 +13,7 @@ export async function POST(req) {
         // 
         // ${API_BASE_URL}/VirtualFrontDesk
         // http://127.0.0.1:8000/VirtualFrontDesk
-        const fastapiResponse = await fetch(`${API_BASE_URL}/VirtualFrontDesk`, {
+        const fastapiResponse = await fetch(`http://127.0.0.1:8000/VirtualFrontDesk`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
