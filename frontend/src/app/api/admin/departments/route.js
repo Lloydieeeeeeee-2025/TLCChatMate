@@ -64,9 +64,9 @@ export async function POST(request) {
         return Response.json({
             success: true,
             message: "Department created successfully",
-            data: { 
-                department_id: result.insertId, 
-                department_name: trimmedDepartmentName 
+            data: {
+                department_id: result.insertId,
+                department_name: trimmedDepartmentName
             }
         });
 
@@ -170,18 +170,11 @@ export async function DELETE(request) {
             );
         }
 
-        // Check if there are FAQs in this department
-        const [faqs] = await chatmate.execute(
-            "SELECT faq_id FROM faqs WHERE department_id = ?",
+        // Delete all FAQs in this department first (cascade delete)
+        await chatmate.execute(
+            "DELETE FROM faqs WHERE department_id = ?",
             [targetId]
         );
-
-        if (faqs.length > 0) {
-            return Response.json(
-                { success: false, message: "Cannot delete department with existing FAQs. Delete FAQs first." },
-                { status: 409 }
-            );
-        }
 
         // Delete department
         await chatmate.execute(
@@ -201,4 +194,4 @@ export async function DELETE(request) {
             { status: 500 }
         );
     }
-}   
+}

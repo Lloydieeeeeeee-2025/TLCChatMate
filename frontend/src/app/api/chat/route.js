@@ -5,20 +5,18 @@ const API_BASE_URL =
 
 export async function POST(req) {
     try {
-        // Adjust these names to what your frontend actually sends
-        const { prompt, sessionId } = await req.json();
+        const { prompt, conversationSession } = await req.json();
 
         console.log("Sending request to FastAPI with prompt:", prompt);
-
         // 
         // ${API_BASE_URL}/VirtualFrontDesk
         // http://127.0.0.1:8000/VirtualFrontDesk
-        const fastapiResponse = await fetch(`http://127.0.0.1:8000/VirtualFrontDesk`, {
+        const fastapiResponse = await fetch(`${API_BASE_URL}/VirtualFrontDesk`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 prompt,
-                conversationSession: sessionId ?? ""
+                conversationSession: conversationSession ?? ""
             }),
         });
 
@@ -30,6 +28,7 @@ export async function POST(req) {
         if (!fastapiResponse.ok) {
             return NextResponse.json(
                 {
+                    success: false,
                     error: "FastAPI backend error",
                     status: fastapiResponse.status,
                     detail: text,
@@ -38,22 +37,27 @@ export async function POST(req) {
             );
         }
 
-        let data;
+        let backendData;
         try {
-            data = JSON.parse(text);
+            backendData = JSON.parse(text);
         } catch {
             console.error("Failed to parse FastAPI JSON");
             return NextResponse.json(
-                { error: "Invalid JSON from backend", raw: text },
+                { success: false, error: "Invalid JSON from backend", raw: text },
                 { status: 500 }
             );
         }
 
-        return NextResponse.json(data, { status: 200 });
+        // Wrap the backend response in the format your frontend expects
+        return NextResponse.json({
+            success: true,
+            data: backendData
+        }, { status: 200 });
     } catch (error) {
         console.error("Error in /api/chat route:", error);
         return NextResponse.json(
             {
+                success: false,
                 error: "Internal server error in Next.js API",
                 details: error.message || String(error),
             },

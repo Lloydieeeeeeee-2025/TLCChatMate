@@ -28,15 +28,15 @@ export async function POST(req) {
         return NextResponse.json({ success: true, message: "Course uploaded successfully", data: { course_id: result.insertId } }, { status: 201 });
     } catch (err) {
         console.error("Error uploading course:", err);
-        
+
         // Handle max_allowed_packet error specifically
         if (err.code === 'ER_NET_PACKET_TOO_LARGE' || err.sqlMessage?.includes('max_allowed_packet')) {
-            return NextResponse.json({ 
-                success: false, 
-                message: "File is too large for the database. Please ensure MySQL max_allowed_packet is set to at least 256MB. Contact your system administrator." 
+            return NextResponse.json({
+                success: false,
+                message: "File is too large for the database. Please ensure MySQL max_allowed_packet is set to at least 256MB. Contact your system administrator."
             }, { status: 413 });
         }
-        
+
         return NextResponse.json({ success: false, message: "Failed to upload course" }, { status: 500 });
     }
 }
@@ -103,15 +103,15 @@ export async function PUT(req) {
         return NextResponse.json({ success: true, message: "Course updated successfully" }, { status: 200 });
     } catch (err) {
         console.error("Error updating course:", err);
-        
+
         // Handle max_allowed_packet error specifically
         if (err.code === 'ER_NET_PACKET_TOO_LARGE' || err.sqlMessage?.includes('max_allowed_packet')) {
-            return NextResponse.json({ 
-                success: false, 
-                message: "File is too large for the database. Please ensure MySQL max_allowed_packet is set to at least 256MB. Contact your system administrator." 
+            return NextResponse.json({
+                success: false,
+                message: "File is too large for the database. Please ensure MySQL max_allowed_packet is set to at least 256MB. Contact your system administrator."
             }, { status: 413 });
         }
-        
+
         return NextResponse.json({ success: false, message: "Failed to update course" }, { status: 500 });
     }
 }
@@ -148,7 +148,17 @@ export async function PATCH(req) {
 export async function DELETE(req) {
     try {
         const { searchParams } = new URL(req.url);
-        const courseId = searchParams.get("course_id");
+        let courseId = searchParams.get("course_id");
+
+        if (!courseId) {
+            try {
+                const body = await req.json();
+                courseId = body.course_id || body.id;
+            } catch (e) {
+                // Not JSON or empty
+            }
+        }
+
         if (!courseId) {
             return NextResponse.json({ success: false, message: "Course ID is required" }, { status: 400 });
         }

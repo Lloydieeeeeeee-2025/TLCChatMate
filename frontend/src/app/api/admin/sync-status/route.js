@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 
+const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://backend:8000";
+
 export async function GET() {
     try {
-        const response = await fetch('http://127.0.0.1:8000/admin/sync-status', {
+
+        // ${API_BASE_URL}/admin/sync-status  - production
+        // http://127.0.0.1:8000/admin/sync-status - localhost
+        const response = await fetch(`${API_BASE_URL}/admin/sync-status`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',

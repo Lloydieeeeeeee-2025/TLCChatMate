@@ -13,7 +13,7 @@ export async function GET(request) {
                 d.department_name
             FROM faqs f
             LEFT JOIN departments d ON f.department_id = d.department_id`;
-        
+
         let params = [];
 
         if (departmentId) {
@@ -38,7 +38,7 @@ export async function GET(request) {
         faqs.forEach(faq => {
             const deptName = faq.department_name || "General";
             const deptId = faq.department_id || 0;
-            
+
             if (!faqsByDepartment[deptId]) {
                 faqsByDepartment[deptId] = {
                     department_id: deptId,
@@ -46,7 +46,7 @@ export async function GET(request) {
                     faqs: []
                 };
             }
-            
+
             faqsByDepartment[deptId].faqs.push({
                 faq_id: faq.faq_id,
                 question: faq.question,
@@ -119,8 +119,8 @@ export async function POST(request) {
         return Response.json({
             success: true,
             message: "FAQ created successfully",
-            data: { 
-                faq_id: result.insertId, 
+            data: {
+                faq_id: result.insertId,
                 question: trimmedQuestion,
                 department_id: department_id
             }

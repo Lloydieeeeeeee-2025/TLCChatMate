@@ -51,6 +51,12 @@ export default function Update({ open, close, selectedCourseRow, onUpdate }) {
 
         if (!isValid) return
 
+        // Check if data actually changed
+        if (documentName === (selectedCourseRow?.document_name || "") && !courseDocument) {
+            close();
+            return;
+        }
+
         setUpdateProgress(true)
 
         try {
@@ -78,10 +84,8 @@ export default function Update({ open, close, selectedCourseRow, onUpdate }) {
                 onUpdate()
             }
 
-            setTimeout(() => {
-                close()
-                setUpdateProgress(false)
-            }, 1500)
+            close()
+            setUpdateProgress(false)
         } catch (err) {
             setCourseDocumentError("An error occurred while updating the course")
             setUpdateProgress(false)

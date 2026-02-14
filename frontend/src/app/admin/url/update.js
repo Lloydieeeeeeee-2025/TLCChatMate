@@ -1,19 +1,27 @@
 "use client"
 import { useState, useEffect } from "react"
 
-export default function Update({ open, close, selectedUrlRow }) {
+export default function Update({ open, close, selectedUrlRow, onUpdate }) {
     const [linkUrl, setLinkUrl] = useState("")
     const [linkUrlError, setLinkUrlError] = useState("")
     const [description, setDescription] = useState("")
 
     useEffect(() => {
         if (open && selectedUrlRow) {
-            console.log("Update - selectedUrlRow:", selectedUrlRow)
             setLinkUrl(selectedUrlRow.link_url || "")
             setDescription(selectedUrlRow.description || "")
             setLinkUrlError("")
         }
     }, [open, selectedUrlRow])
+
+    const isValidUrl = (string) => {
+        try {
+            new URL(string)
+            return true
+        } catch (_) {
+            return false
+        }
+    }
 
     const submit = async () => {
         setLinkUrlError("")
@@ -23,13 +31,24 @@ export default function Update({ open, close, selectedUrlRow }) {
             return
         }
 
+        if (!isValidUrl(linkUrl)) {
+            setLinkUrlError("Please enter a valid URL format (e.g., https://example.com).")
+            return
+        }
+
+        // Check if data actually changed
+        if (linkUrl === (selectedUrlRow?.link_url || "") &&
+            description === (selectedUrlRow?.description || "")) {
+            close(); // Just close if nothing updated
+            return;
+        }
+
         try {
             const payload = {
                 url_id: selectedUrlRow?.url_id,
                 link_url: linkUrl,
                 description: description || null,
             }
-            console.log("Update - payload:", payload)
             const res = await fetch("/api/admin/url", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
@@ -37,17 +56,13 @@ export default function Update({ open, close, selectedUrlRow }) {
             })
             const data = await res.json()
             if (!res.ok) {
-                if (res.status === 400) {
-                    setLinkUrlError(data.message || "Invalid input.")
-                } else {
-                    setLinkUrlError(data.message || "An unexpected error occurred.")
-                }
+                setLinkUrlError(data.message || "An unexpected error occurred.")
                 return
             }
-            setTimeout(() => {
-                close()
-                window.location.reload()
-            }, 1500)
+
+            close()
+            if (onUpdate) onUpdate()
+
         } catch (err) {
             console.error("Update - Error:", err.message)
             setLinkUrlError("An error occurred while updating the URL.")
@@ -86,7 +101,7 @@ export default function Update({ open, close, selectedUrlRow }) {
                                 </div>
                                 <div className="space-y-2">
                                     <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
-                                    <input id="description" name="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Enter URL description" rows="4" className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"/>
+                                    <input id="description" name="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Enter URL description" rows="4" className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent" />
                                 </div>
                             </div>
                         </div>

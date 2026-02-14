@@ -57,7 +57,8 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
     try {
-        const { id } = await request.json();
+        const body = await request.json();
+        const id = body.url_id || body.id;
 
         if (!id) {
             return NextResponse.json({ success: false, message: "URL ID is required" }, { status: 400 });

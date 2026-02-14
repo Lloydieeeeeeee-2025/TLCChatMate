@@ -33,7 +33,7 @@ export default function Archive({ open, close, selectedHandbookRow, onArchiveCha
         }
     }
 
-    const handleUnarchive = async (handbook) => {
+    const handleUnarchiveClick = async (handbook) => {
         try {
             const res = await fetch("/api/admin/handbook", {
                 method: "PATCH",
@@ -42,29 +42,30 @@ export default function Archive({ open, close, selectedHandbookRow, onArchiveCha
             })
             const data = await res.json()
             if (data.success) {
-                if (onArchiveChange) onArchiveChange()
+                if (onArchiveChange) onArchiveChange("Restored!", "Handbook has been restored to active list.")
                 loadArchived()
                 setOpenDropdownId(null)
             } else {
-                alert(data.message || "Failed to restore")
+                setArchiveError(data.message || "Failed to restore")
             }
         } catch (err) {
-            alert("Error restoring handbook")
+            setArchiveError("Error restoring handbook")
         }
     }
 
-    const handleDelete = async (handbookId, name) => {
+    const handleDeleteClick = async (handbookId, name) => {
         try {
             const res = await fetch(`/api/admin/handbook?handbook_id=${handbookId}`, { method: "DELETE" })
             const data = await res.json()
             if (data.success) {
+                if (onArchiveChange) onArchiveChange("Deleted!", "Handbook has been permanently removed.")
                 loadArchived()
                 setOpenDropdownId(null)
             } else {
-                alert(data.message || "Failed to delete")
+                setArchiveError(data.message || "Failed to delete")
             }
         } catch (err) {
-            alert("Error deleting handbook")
+            setArchiveError("Error deleting handbook")
         }
     }
 
@@ -80,7 +81,7 @@ export default function Archive({ open, close, selectedHandbookRow, onArchiveCha
             })
             const data = await res.json()
             if (data.success) {
-                if (onArchiveChange) onArchiveChange()
+                if (onArchiveChange) onArchiveChange("Archived!", "Handbook has been archived.")
                 setTimeout(() => {
                     close()
                     setArchiveProgress(false)
@@ -130,7 +131,7 @@ export default function Archive({ open, close, selectedHandbookRow, onArchiveCha
                                                 <div className="divide-y divide-gray-200">
                                                     {archivedHandbooks.map((handbook) => (
                                                         <div key={handbook.handbook_id} className="py-2 relative">
-                                                            <div 
+                                                            <div
                                                                 className="flex justify-between items-center cursor-pointer hover:bg-gray-50 px-2 py-1 rounded"
                                                                 onClick={() => toggleDropdown(handbook.handbook_id)}
                                                             >
@@ -139,13 +140,13 @@ export default function Archive({ open, close, selectedHandbookRow, onArchiveCha
                                                             {openDropdownId === handbook.handbook_id && (
                                                                 <div className="mt-1 w-full bg-white border border-gray-200 rounded shadow-lg z-10">
                                                                     <button
-                                                                        onClick={() => handleUnarchive(handbook)}
+                                                                        onClick={() => handleUnarchiveClick(handbook)}
                                                                         className="block w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50"
                                                                     >
                                                                         Unarchive
                                                                     </button>
                                                                     <button
-                                                                        onClick={() => handleDelete(handbook.handbook_id, handbook.handbook_name)}
+                                                                        onClick={() => handleDeleteClick(handbook.handbook_id, handbook.handbook_name)}
                                                                         className="block w-full text-left px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
                                                                     >
                                                                         Delete

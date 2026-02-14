@@ -4,6 +4,10 @@ import HandbookUpdate from './update';
 import HandbookCreate from './create';
 import Navigation from "../navigation";
 import Archive from './archive';
+import Pagination from '../Pagination';
+import ConfirmModal from '../ConfirmModal';
+import Success from '../success';
+import Remove from '../remove';
 
 export default function Handbook() {
     const [handbooks, setHandbooks] = useState([]);
@@ -16,6 +20,10 @@ export default function Handbook() {
     const [searchData, setSearchData] = useState("");
     const [sortOption, setSortOption] = useState("");
     const [openDropdownId, setOpenDropdownId] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: 'danger', message: '', onConfirm: () => { } });
+    const [successModal, setSuccessModal] = useState({ isOpen: false, message: '', body: '' });
+    const resultsPerPage = 10;
 
     const closeUpdateModal = useCallback(() => { setIsUpdateOpen(false); setSelectedHandbook(null); }, []);
     const openUpdateModal = useCallback((handbook) => { setSelectedHandbook(handbook); setIsUpdateOpen(true); setOpenDropdownId(null); }, []);
@@ -24,6 +32,10 @@ export default function Handbook() {
     const openArchiveModal = useCallback((handbook) => { setSelectedHandbook(handbook); setIsArchiveOpen(true); setOpenDropdownId(null); }, []);
     const openArchiveListModal = useCallback(() => { setSelectedHandbook(null); setIsArchiveOpen(true); }, []);
     const closeArchiveModal = useCallback(() => { setIsArchiveOpen(false); setSelectedHandbook(null); }, []);
+
+    const showSuccess = (message, body = "") => {
+        setSuccessModal({ isOpen: true, message, body });
+    };
 
     const search = (e) => { setSearchData(e.target.value); };
 
@@ -73,24 +85,31 @@ export default function Handbook() {
         }
     });
 
-    const handleArchive = async (handbookId) => {
-        if (!confirm("Archive this handbook? It will be hidden from the main list.")) return;
-        try {
-            const res = await fetch("/api/admin/handbook", {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ handbook_id: handbookId, action: "archive" })
-            });
-            const data = await res.json();
-            if (data.success) {
-                fetchHandbooks();
-                setOpenDropdownId(null);
-            } else {
-                alert(data.message || "Failed to archive");
+    const handleArchive = (handbookId) => {
+        setConfirmModal({
+            isOpen: true,
+            type: 'primary',
+            message: "Archive this handbook? It will be hidden from the main list.",
+            onConfirm: async () => {
+                try {
+                    const res = await fetch("/api/admin/handbook", {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ handbook_id: handbookId, action: "archive" })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        fetchHandbooks();
+                        setOpenDropdownId(null);
+                        showSuccess("Archived!", "Handbook has been archived successfully.");
+                    } else {
+                        setConfirmModal({ isOpen: true, type: 'danger', message: data.message || "Failed to archive", onConfirm: () => setConfirmModal({ ...confirmModal, isOpen: false }) });
+                    }
+                } catch (err) {
+                    setConfirmModal({ isOpen: true, type: 'danger', message: "Error archiving handbook", onConfirm: () => setConfirmModal({ ...confirmModal, isOpen: false }) });
+                }
             }
-        } catch (err) {
-            alert("Error archiving handbook");
-        }
+        });
     };
 
     const handleViewDocument = async (handbookId, handbookName) => {
@@ -156,46 +175,46 @@ export default function Handbook() {
 
     useEffect(() => { fetchHandbooks(); }, []);
 
-    const handleDelete = async (handbookId) => {
-        if (!confirm("Are you sure you want to permanently delete this handbook? This action cannot be undone.")) return;
-        try {
-            const res = await fetch(`/api/admin/handbook?handbook_id=${handbookId}`, {
-                method: "DELETE"
-            });
-            const data = await res.json();
-            if (data.success) {
-                fetchHandbooks(); // Refresh the list
-                setOpenDropdownId(null);
-            } else {
-                alert(data.message || "Failed to delete handbook");
-            }
-        } catch (err) {
-            alert("Error deleting handbook");
-            console.error("Delete error:", err);
-        }
+    const handleDeleteSuccess = () => {
+        fetchHandbooks();
+        setOpenDropdownId(null);
+        showSuccess("Deleted!", "Handbook has been permanently removed.");
     };
 
+    const totalPages = Math.ceil(sortedData.length / resultsPerPage);
+    const paginatedData = sortedData.slice((currentPage - 1) * resultsPerPage, currentPage * resultsPerPage);
+
+    const GhostButton = ({ children, onClick, className = "" }) => (
+        <button
+            type="button"
+            onClick={onClick}
+            className={`text-gray-600 bg-transparent box-border border border-transparent hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium leading-5 rounded-sm text-sm px-4 py-2.5 focus:outline-none transition-all ${className}`}
+        >
+            {children}
+        </button>
+    );
+
     return (
-        <main className="min-h-screen bg-gray-50">
+        <main className="min-h-screen bg-white">
             <Navigation />
             <div className="pt-16 sm:pt-15 sm:pl-64">
                 <div className="p-4 sm:p-6 lg:p-8">
                     <div className="max-w-7xl mx-auto">
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
                             <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Handbook</h1>
-                            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                                <button className="flex items-center justify-center gap-2 w-full sm:w-auto bg-[#205781] text-white text-sm sm:text-base hover:bg-[#1a4a6b] py-2 px-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md" onClick={openArchiveListModal}>
+                            <div className="flex flex-col sm:flex-row gap-3 w-fit sm:w-auto">
+                                <GhostButton className="bg-white text-gray-600 hover:bg-[#1a4a6b] flex items-center gap-2 w-fit sm:w-auto" onClick={openArchiveListModal}>
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
                                     </svg>
                                     <span>Archived</span>
-                                </button>
-                                <button className="flex items-center justify-center gap-2 w-full sm:w-auto bg-[#205781] text-white text-sm sm:text-base hover:bg-[#1a4a6b] py-2 px-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md" onClick={openCreateModal}>
+                                </GhostButton>
+                                <GhostButton className="bg-white text-gray-600 hover:bg-[#1a4a6b] flex items-center gap-2 w-fit sm:w-auto" onClick={openCreateModal}>
                                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                                     </svg>
                                     <span>Upload Document</span>
-                                </button>
+                                </GhostButton>
                             </div>
                         </div>
                         <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-200 h-[73vh] flex flex-col overflow-hidden">
@@ -250,7 +269,7 @@ export default function Handbook() {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-200">
-                                                    {sortedData.map((handbook, index) => (
+                                                    {paginatedData.map((handbook, index) => (
                                                         <tr key={handbook.handbook_id ?? `handbook-${index}`} className="bg-white hover:bg-gray-50 transition-colors duration-150">
                                                             <td className="px-6 py-4 text-gray-800 font-medium">
                                                                 <button onClick={() => handleViewDocument(handbook.handbook_id, handbook.handbook_name)} className="text-gray-600 hover:text-[#205781] hover:underline">
@@ -299,9 +318,13 @@ export default function Handbook() {
                                                                                 </li>
                                                                                 {/* DELETE BUTTON ADDED HERE */}
                                                                                 <li>
-                                                                                    <button
-                                                                                        onClick={() => handleDelete(handbook.handbook_id)}
-                                                                                        className="w-full text-left text-red-600 hover:bg-red-50 flex items-center p-3"
+                                                                                    <Remove
+                                                                                        id={{ handbook_id: handbook.handbook_id }}
+                                                                                        name={handbook.handbook_name}
+                                                                                        apiroute="/api/admin/handbook"
+                                                                                        onSuccess={handleDeleteSuccess}
+                                                                                        message="Are you sure you want to permanently delete this handbook? This action cannot be undone."
+                                                                                        className="w-full text-left text-red-600 hover:bg-red-50 flex items-center p-3 text-sm"
                                                                                     >
                                                                                         <div className="flex items-center justify-center bg-white border border-slate-200 rounded shadow-sm h-7 w-7 shrink-0 mr-3">
                                                                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
@@ -309,7 +332,7 @@ export default function Handbook() {
                                                                                             </svg>
                                                                                         </div>
                                                                                         <span className="whitespace-nowrap text-sm">Delete</span>
-                                                                                    </button>
+                                                                                    </Remove>
                                                                                 </li>
                                                                             </ul>
                                                                         </div>
@@ -324,68 +347,62 @@ export default function Handbook() {
 
                                         {/* Mobile View */}
                                         <div className="md:hidden divide-y divide-gray-200">
-                                            {sortedData.map((handbook, index) => (
+                                            {paginatedData.map((handbook, index) => (
                                                 <div key={handbook.handbook_id ?? `handbook-mobile-${index}`} className="p-4 bg-white hover:bg-gray-50 transition-colors duration-150">
-                                                    <div className="flex items-start justify-between mb-3">
-                                                        <div className="flex-1 min-w-0">
-                                                            <h3 className="text-base font-semibold text-gray-800 truncate">{handbook.handbook_name}</h3>
-                                                        </div>
-                                                        <div className="relative ml-2" data-dropdown={handbook.handbook_id}>
-                                                            <button onClick={() => toggleDropdown(handbook.handbook_id)} className="p-2 text-[#205781] hover:bg-[#205781]/10 rounded-lg">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                                    <div className="flex flex-col gap-4">
+                                                        <div className="flex items-start justify-between">
+                                                            <div className="flex-1 min-w-0">
+                                                                <h3 className="text-base font-semibold text-gray-800 truncate">{handbook.handbook_name}</h3>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => handleViewDocument(handbook.handbook_id, handbook.handbook_name)}
+                                                                className="p-2 text-[#205781] hover:bg-[#205781]/10 rounded-lg transition-all duration-150"
+                                                                aria-label="View document"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                                                                 </svg>
                                                             </button>
-                                                            {openDropdownId === handbook.handbook_id && (
-                                                                <div className="origin-top-right absolute right-0 mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-xl z-20">
-                                                                    <ul className="py-1">
-                                                                        <li>
-                                                                            <button onClick={() => handleViewDocument(handbook.handbook_id, handbook.handbook_name)} className="w-full text-left text-slate-800 hover:bg-slate-50 flex items-center p-3 text-sm">
-                                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-3">
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                                                                </svg>
-                                                                                <span>View</span>
-                                                                            </button>
-                                                                        </li>
-                                                                        <li>
-                                                                            <button onClick={() => handleDownloadDocument(handbook.handbook_id, handbook.handbook_name)} className="w-full text-left text-slate-800 hover:bg-slate-50 flex items-center p-3 text-sm">
-                                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-3">
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                                                                                </svg>
-                                                                                <span>Download</span>
-                                                                            </button>
-                                                                        </li>
-                                                                        <li>
-                                                                            <button onClick={() => handleArchive(handbook.handbook_id)} className="w-full text-left text-slate-800 hover:bg-slate-50 flex items-center p-3 text-sm">
-                                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-3">
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
-                                                                                </svg>
-                                                                                <span>Archive</span>
-                                                                            </button>
-                                                                        </li>
-                                                                        <li>
-                                                                            <button onClick={() => openUpdateModal(handbook)} className="w-full text-left text-slate-800 hover:bg-slate-50 flex items-center p-3 text-sm">
-                                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-3">
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                                                                                </svg>
-                                                                                <span>Update</span>
-                                                                            </button>
-                                                                        </li>
-                                                                        <li>
-                                                                            <button
-                                                                                onClick={() => handleDelete(handbook.handbook_id)}
-                                                                                className="w-full text-left text-red-600 hover:bg-red-50 flex items-center p-3 text-sm"
-                                                                            >
-                                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-3">
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                                                                </svg>
-                                                                                <span>Delete</span>
-                                                                            </button>
-                                                                        </li>
-                                                                    </ul>
-                                                                </div>
-                                                            )}
+                                                        </div>
+
+                                                        <div className="flex flex-col gap-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <button
+                                                                    onClick={() => openUpdateModal(handbook)}
+                                                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-[#205781] bg-[#205781]/5 hover:bg-[#205781]/10 rounded-lg transition-all duration-150"
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
+                                                                    <span>Edit</span>
+                                                                </button>
+                                                                <Remove
+                                                                    id={{ handbook_id: handbook.handbook_id }}
+                                                                    name={handbook.handbook_name}
+                                                                    apiroute="/api/admin/handbook"
+                                                                    onSuccess={handleDeleteSuccess}
+                                                                    message="Are you sure you want to permanently delete this handbook? This action cannot be undone."
+                                                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all duration-150"
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
+                                                                    <span>Delete</span>
+                                                                </Remove>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <button
+                                                                    onClick={() => handleDownloadDocument(handbook.handbook_id, handbook.handbook_name)}
+                                                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg transition-all duration-150"
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                                                                    <span>Download</span>
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleArchive(handbook.handbook_id)}
+                                                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg transition-all duration-150"
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" /></svg>
+                                                                    <span>Archive</span>
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -394,13 +411,33 @@ export default function Handbook() {
                                     </div>
                                 )}
                             </div>
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                totalResults={sortedData.length}
+                                resultsPerPage={resultsPerPage}
+                                onPageChange={setCurrentPage}
+                            />
                         </div>
                     </div>
                 </div>
             </div>
-            <HandbookUpdate open={isUpdateOpen} close={closeUpdateModal} selectedHandbookRow={selectedHandbook} onUpdate={fetchHandbooks} />
-            <HandbookCreate open={isCreateOpen} close={closeCreateModal} onHandbookCreated={fetchHandbooks} />
-            <Archive open={isArchiveOpen} close={closeArchiveModal} selectedHandbookRow={selectedHandbook} onArchiveChange={fetchHandbooks} />
+            <HandbookUpdate open={isUpdateOpen} close={closeUpdateModal} selectedHandbookRow={selectedHandbook} onUpdate={() => { fetchHandbooks(); showSuccess("Updated!", "Handbook document has been updated."); }} />
+            <HandbookCreate open={isCreateOpen} close={closeCreateModal} onHandbookCreated={() => { fetchHandbooks(); showSuccess("Uploaded!", "New handbook has been uploaded."); }} />
+            <Archive open={isArchiveOpen} close={closeArchiveModal} selectedHandbookRow={selectedHandbook} onArchiveChange={(msg, body) => { fetchHandbooks(); showSuccess(msg || "Success!", body || "Archive status changed."); }} />
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                onConfirm={confirmModal.onConfirm}
+                type={confirmModal.type}
+                message={confirmModal.message}
+            />
+            <Success
+                isOpen={successModal.isOpen}
+                onClose={() => setSuccessModal({ ...successModal, isOpen: false })}
+                message={successModal.message}
+                body={successModal.body}
+            />
         </main>
     );
 }

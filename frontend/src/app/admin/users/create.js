@@ -1,7 +1,7 @@
 "use client"
 import { useState } from "react"
 
-export default function Create({ open, close }) {
+export default function Create({ open, close, onSuccess }) {
     const [userName, setUserName] = useState("")
     const [userNameError, setUserNameError] = useState("")
     const [userPassword, setUserPassword] = useState("")
@@ -13,23 +13,23 @@ export default function Create({ open, close }) {
         setUserNameError("")
         setUserPasswordError("")
         setVerifyUserPasswordError("")
-        
+
         // Username validation (2-50 characters, letters, numbers, underscores, hyphens)
         if (!userName.match(/^[A-Za-z0-9_-]{2,50}$/)) {
             setUserNameError("Username must be 2-50 characters and can contain letters, numbers, underscores, and hyphens.")
             return
         }
-        
+
         if (!userPassword.match(/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/)) {
             setUserPasswordError("Password must contain uppercase, lowercase, number, and special character. Minimum 8 characters.")
             return
         }
-        
+
         if (userPassword !== verifyUserPassword) {
             setVerifyUserPasswordError("Passwords do not match.")
             return
         }
-        
+
         try {
             const res = await fetch("/api/admin/users", {
                 method: "POST",
@@ -53,7 +53,11 @@ export default function Create({ open, close }) {
             setUserName("")
             setUserPassword("")
             setVerifyUserPassword("")
-            close()
+            if (onSuccess) {
+                onSuccess()
+            } else {
+                close()
+            }
         } catch (err) {
             console.error("Error:", err.message)
             setUserNameError("An error occurred while creating the account.")
@@ -85,14 +89,14 @@ export default function Create({ open, close }) {
                             <div className="space-y-4 md:space-y-6">
                                 <div className="space-y-2">
                                     <label htmlFor="username" className="block text-sm font-medium text-gray-700">Username</label>
-                                    <input 
-                                        type="text" 
-                                        id="username" 
-                                        name="username" 
-                                        value={userName} 
-                                        onChange={(e) => setUserName(e.target.value)} 
-                                        placeholder="Username" 
-                                        className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent" 
+                                    <input
+                                        type="text"
+                                        id="username"
+                                        name="username"
+                                        value={userName}
+                                        onChange={(e) => setUserName(e.target.value)}
+                                        placeholder="Username"
+                                        className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"
                                     />
                                     {userNameError && <span className="text-red-600 text-sm mt-1 block">{userNameError}</span>}
                                 </div>
@@ -100,14 +104,14 @@ export default function Create({ open, close }) {
                                     <h3 className="text-lg font-medium text-gray-800 mb-3">Create Password</h3>
                                     <div className="space-y-2">
                                         <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
-                                        <input 
-                                            type="password" 
-                                            id="password" 
-                                            name="password" 
-                                            value={userPassword} 
-                                            onChange={(e) => setUserPassword(e.target.value)} 
-                                            placeholder="••••••••" 
-                                            className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent" 
+                                        <input
+                                            type="password"
+                                            id="password"
+                                            name="password"
+                                            value={userPassword}
+                                            onChange={(e) => setUserPassword(e.target.value)}
+                                            placeholder="••••••••"
+                                            className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"
                                         />
                                         {userPasswordError && <span className="text-red-600 text-sm mt-1 block">{userPasswordError}</span>}
                                     </div>

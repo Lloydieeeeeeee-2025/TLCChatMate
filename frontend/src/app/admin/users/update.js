@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
 
-export default function Update({ open, close, selectedAccountRow }) {
+export default function Update({ open, close, selectedAccountRow, onChanges, onSuccess }) {
     const [userName, setUserName] = useState("")
     const [userNameError, setUserNameError] = useState("")
     const [currentPassword, setCurrentPassword] = useState("")
@@ -10,10 +10,12 @@ export default function Update({ open, close, selectedAccountRow }) {
     const [newPasswordError, setNewPasswordError] = useState("")
     const [verifyPassword, setVerifyPassword] = useState("")
     const [verifyPasswordError, setVerifyPasswordError] = useState("")
+    const [initialUserName, setInitialUserName] = useState("")
 
     useEffect(() => {
         if (open && selectedAccountRow) {
             setUserName(selectedAccountRow.user_name || "")
+            setInitialUserName(selectedAccountRow.user_name || "")
             setCurrentPassword("")
             setNewPassword("")
             setVerifyPassword("")
@@ -24,20 +26,28 @@ export default function Update({ open, close, selectedAccountRow }) {
         }
     }, [open, selectedAccountRow])
 
+    useEffect(() => {
+        // Check if anything has changed
+        const hasChanged = userName !== initialUserName || currentPassword !== "" || newPassword !== "" || verifyPassword !== ""
+        if (onChanges) {
+            onChanges(hasChanged)
+        }
+    }, [userName, currentPassword, newPassword, verifyPassword, initialUserName, onChanges])
+
     const submit = async () => {
         setUserNameError("")
         setCurrentPasswordError("")
         setNewPasswordError("")
         setVerifyPasswordError("")
-        
+
         let isValid = true
-        
+
         // Username validation
         if (!userName.match(/^[A-Za-z0-9_-]{2,50}$/)) {
             setUserNameError("Username must be 2-50 characters and can contain letters, numbers, underscores, and hyphens.")
             isValid = false
         }
-        
+
         if (currentPassword || newPassword || verifyPassword) {
             if (!currentPassword) {
                 setCurrentPasswordError("Enter your current password.")
@@ -52,26 +62,32 @@ export default function Update({ open, close, selectedAccountRow }) {
                 isValid = false
             }
         }
-        
+
         if (!isValid) return
-        
+
+        // Check if data actually changed
+        if (userName === initialUserName && !currentPassword && !newPassword) {
+            close();
+            return;
+        }
+
         try {
             const payload = {
                 user_id: selectedAccountRow?.user_id,
                 user_name: userName,
             };
-            
+
             if (currentPassword && newPassword) {
                 payload.currentPassword = currentPassword;
                 payload.newPassword = newPassword;
             }
-            
+
             const res = await fetch("/api/admin/users", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
             });
-            
+
             const data = await res.json();
             if (!res.ok) {
                 if (res.status === 409) {
@@ -87,11 +103,13 @@ export default function Update({ open, close, selectedAccountRow }) {
                 }
                 return;
             }
-            
-            setTimeout(() => { 
-                close(); 
-            }, 1500);
-            
+
+            if (onSuccess) {
+                onSuccess()
+            } else {
+                close()
+            }
+
         } catch (err) {
             setUserNameError("An error occurred while updating the user.");
         }
@@ -122,14 +140,14 @@ export default function Update({ open, close, selectedAccountRow }) {
                             <div className="space-y-4 md:space-y-6">
                                 <div className="space-y-2">
                                     <label htmlFor="username" className="block text-sm font-medium text-gray-700">Username</label>
-                                    <input 
-                                        type="text" 
-                                        id="username" 
-                                        name="username" 
-                                        className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent rounded-lg" 
-                                        value={userName} 
-                                        onChange={(e) => setUserName(e.target.value)} 
-                                        placeholder="Username" 
+                                    <input
+                                        type="text"
+                                        id="username"
+                                        name="username"
+                                        className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent rounded-lg"
+                                        value={userName}
+                                        onChange={(e) => setUserName(e.target.value)}
+                                        placeholder="Username"
                                     />
                                     {userNameError && <span className="text-red-600 text-sm mt-1 block">{userNameError}</span>}
                                 </div>
@@ -137,40 +155,40 @@ export default function Update({ open, close, selectedAccountRow }) {
                                     <h3 className="text-lg font-medium text-gray-800 mb-3">Change Password (Optional)</h3>
                                     <div className="space-y-2">
                                         <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">Current Password</label>
-                                        <input 
-                                            type="password" 
-                                            id="currentPassword" 
-                                            name="currentPassword" 
-                                            className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent rounded-lg" 
-                                            value={currentPassword} 
-                                            onChange={(e) => setCurrentPassword(e.target.value)} 
-                                            placeholder="••••••••" 
+                                        <input
+                                            type="password"
+                                            id="currentPassword"
+                                            name="currentPassword"
+                                            className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent rounded-lg"
+                                            value={currentPassword}
+                                            onChange={(e) => setCurrentPassword(e.target.value)}
+                                            placeholder="••••••••"
                                         />
                                         {currentPasswordError && <span className="text-red-600 text-sm mt-1 block">{currentPasswordError}</span>}
                                     </div>
                                     <div className="space-y-2">
                                         <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">New Password</label>
-                                        <input 
-                                            type="password" 
-                                            id="newPassword" 
-                                            name="newPassword" 
-                                            className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent rounded-lg" 
-                                            value={newPassword} 
-                                            onChange={(e) => setNewPassword(e.target.value)} 
-                                            placeholder="••••••••" 
+                                        <input
+                                            type="password"
+                                            id="newPassword"
+                                            name="newPassword"
+                                            className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent rounded-lg"
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            placeholder="••••••••"
                                         />
                                         {newPasswordError && <span className="text-red-600 text-sm mt-1 block">{newPasswordError}</span>}
                                     </div>
                                     <div className="space-y-2">
                                         <label htmlFor="verifyPassword" className="block text-sm font-medium text-gray-700">Verify New Password</label>
-                                        <input 
-                                            type="password" 
-                                            id="verifyPassword" 
-                                            name="verifyPassword" 
-                                            className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent rounded-lg" 
-                                            value={verifyPassword} 
-                                            onChange={(e) => setVerifyPassword(e.target.value)} 
-                                            placeholder="••••••••" 
+                                        <input
+                                            type="password"
+                                            id="verifyPassword"
+                                            name="verifyPassword"
+                                            className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent rounded-lg"
+                                            value={verifyPassword}
+                                            onChange={(e) => setVerifyPassword(e.target.value)}
+                                            placeholder="••••••••"
                                         />
                                         {verifyPasswordError && <span className="text-red-600 text-sm mt-1 block">{verifyPasswordError}</span>}
                                     </div>

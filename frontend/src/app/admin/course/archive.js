@@ -33,7 +33,23 @@ export default function Archive({ open, close, selectedCourseRow, onArchiveChang
         }
     }
 
-    const handleUnarchive = async (course) => {
+    const handleDelete = async (courseId, name) => {
+        try {
+            const res = await fetch(`/api/admin/course?course_id=${courseId}`, { method: "DELETE" })
+            const data = await res.json()
+            if (data.success) {
+                if (onArchiveChange) onArchiveChange("Deleted!", "Course has been permanently removed.")
+                loadArchived()
+                setOpenDropdownId(null)
+            } else {
+                setArchiveError(data.message || "Failed to delete")
+            }
+        } catch (err) {
+            setArchiveError("Error deleting course")
+        }
+    }
+
+    const handleUnarchiveClick = async (course) => {
         try {
             const res = await fetch("/api/admin/course", {
                 method: "PATCH",
@@ -42,29 +58,14 @@ export default function Archive({ open, close, selectedCourseRow, onArchiveChang
             })
             const data = await res.json()
             if (data.success) {
-                if (onArchiveChange) onArchiveChange()
+                if (onArchiveChange) onArchiveChange("Restored!", "Course has been restored to active list.")
                 loadArchived()
                 setOpenDropdownId(null)
             } else {
-                alert(data.message || "Failed to restore")
+                setArchiveError(data.message || "Failed to restore")
             }
         } catch (err) {
-            alert("Error restoring course")
-        }
-    }
-
-    const handleDelete = async (courseId, name) => {
-        try {
-            const res = await fetch(`/api/admin/course?course_id=${courseId}`, { method: "DELETE" })
-            const data = await res.json()
-            if (data.success) {
-                loadArchived()
-                setOpenDropdownId(null)
-            } else {
-                alert(data.message || "Failed to delete")
-            }
-        } catch (err) {
-            alert("Error deleting course")
+            setArchiveError("Error restoring course")
         }
     }
 
@@ -80,7 +81,7 @@ export default function Archive({ open, close, selectedCourseRow, onArchiveChang
             })
             const data = await res.json()
             if (data.success) {
-                if (onArchiveChange) onArchiveChange()
+                if (onArchiveChange) onArchiveChange("Archived!", "Course has been archived.")
                 setTimeout(() => {
                     close()
                     setArchiveProgress(false)
@@ -139,7 +140,7 @@ export default function Archive({ open, close, selectedCourseRow, onArchiveChang
                                                             {openDropdownId === course.course_id && (
                                                                 <div className="mt-1 w-full bg-white border border-gray-200 rounded shadow-lg z-10">
                                                                     <button
-                                                                        onClick={() => handleUnarchive(course)}
+                                                                        onClick={() => handleUnarchiveClick(course)}
                                                                         className="block w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50"
                                                                     >
                                                                         Unarchive

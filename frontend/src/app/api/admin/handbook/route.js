@@ -165,7 +165,17 @@ export async function PATCH(req) {
 export async function DELETE(req) {
   try {
     const { searchParams } = new URL(req.url);
-    const handbookId = searchParams.get("handbook_id");
+    let handbookId = searchParams.get("handbook_id");
+
+    if (!handbookId) {
+      try {
+        const body = await req.json();
+        handbookId = body.handbook_id || body.id;
+      } catch (e) {
+        // Not JSON
+      }
+    }
+
     if (!handbookId) {
       return NextResponse.json({ success: false, message: "Handbook ID is required" }, { status: 400 });
     }

@@ -1,20 +1,15 @@
 "use client";
-
 import React, { useEffect, useState, useRef } from 'react';
 import Navigation from '../navigation';
 import ReactMarkdown from "react-markdown";
-import Permission from '../permission';
 
 export default function FAQS() {
     const [prompt, setPrompt] = useState("");
     const [messages, setMessages] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [conversationSession, setConversationSession] = useState(null);
-    const [showPermissionModal, setShowPermissionModal] = useState(false);
-    const [authIntent, setAuthIntent] = useState(null);
     const [faqsByDepartment, setFaqsByDepartment] = useState([]);
     const [faqsLoading, setFaqsLoading] = useState(true);
-
     const messagesEndRef = useRef(null);
 
     // Initialize session on mount
@@ -38,7 +33,7 @@ export default function FAQS() {
         initializeSession();
     }, []);
 
-    // Fetch FAQs organized by department
+    // Fetch FAQs organized by department with real-time updates
     useEffect(() => {
         const fetchFaqs = async () => {
             try {
@@ -47,24 +42,30 @@ export default function FAQS() {
                     const data = await response.json();
                     if (data.success && data.data) {
                         setFaqsByDepartment(data.data);
+                        console.log('✓ FAQs updated successfully');
                     }
                 }
             } catch (error) {
-                console.error("Error fetching FAQs:", error);
+                console.error("Error fetching FAQs: ", error);
             } finally {
                 setFaqsLoading(false);
             }
         };
 
+        // Initial fetch
         fetchFaqs();
 
-        const checkLoginStatus = () => {
-            const isLoggedIn = localStorage.getItem('isLoggedIn');
-            if (isLoggedIn) {
-                console.log('✓ User is logged in');
-            }
+        // Set up real-time polling for FAQ updates
+        const pollInterval = setInterval(() => {
+            console.log('🔄 Polling FAQs for updates...');
+            fetchFaqs();
+        }, 30000); // Poll every 30 seconds
+
+        // Cleanup interval on component unmount
+        return () => {
+            clearInterval(pollInterval);
+            console.log('✓ FAQ polling stopped');
         };
-        checkLoginStatus();
     }, []);
 
     // Auto-scroll to latest message
@@ -136,13 +137,13 @@ export default function FAQS() {
         }
 
         const userMessage = questionText || prompt.trim();
-        if (userMessage === "" || isLoading) return;
+        if (userMessage === " " || isLoading) return;
 
         const newUserMessage = { type: 'user', content: userMessage, id: Date.now() };
         setMessages(prev => [...prev, newUserMessage]);
 
         if (!questionText) {
-            setPrompt("");
+            setPrompt(" ");
         }
 
         setIsLoading(true);
@@ -159,25 +160,18 @@ export default function FAQS() {
                 }),
             });
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to get response');
-            }
-
-            if (data.requires_auth) {
-                setAuthIntent(data.intent);
-                setShowPermissionModal(true);
-                setMessages(prev => prev.filter(msg => msg.id !== newUserMessage.id));
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    const aiMessage = { type: 'ai', content: data.data.response, id: Date.now() + 1 };
+                    setMessages(prev => [...prev, aiMessage]);
+                    console.log('✓ Response received');
+                }
             } else {
-                const aiResponse = data.response || "I don't have enough information to answer that question. Please visit The Lewis College for more details.";
-
-                const newAIMessage = { type: 'ai', content: aiResponse, id: Date.now() + 1 };
-                setMessages(prev => [...prev, newAIMessage]);
+                throw new Error('Failed to get response');
             }
-
         } catch (error) {
-            console.error("✗ Error:", error);
+            console.error("✗ Error: ", error);
             const errorMessage = {
                 type: 'ai',
                 content: "Sorry, there was an error processing your request. Please try again.",
@@ -194,16 +188,6 @@ export default function FAQS() {
         handleSubmitQuestion();
     };
 
-    const handlePermissionClose = () => {
-        setShowPermissionModal(false);
-        setAuthIntent(null);
-    };
-
-    const handlePermissionContinue = () => {
-        setShowPermissionModal(false);
-        window.location.href = '/student/login';
-    };
-
     if (!conversationSession) {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
@@ -216,58 +200,53 @@ export default function FAQS() {
     }
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="h-full min-h-screen bg-white flex flex-col overflow-hidden">
             <Navigation />
 
-            {showPermissionModal && (
-                <Permission onClose={handlePermissionClose} onContinue={handlePermissionContinue} intent={authIntent} />
-            )}
-
-            <main className="transition-all duration-300 ease-in-out pt-[90px] pb-32">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center my-8 sm:my-12 space-y-6 sm:space-y-8">
-                        <div className="space-y-3 sm:space-y-4">
-                            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-medium text-gray-600 leading-tight px-2">
-                                Good day! How may I assist you today?
-                            </h2>
-                            <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4 leading-relaxed">
-                                You can select from the options below or feel free to type your questions.
-                            </p>
-                        </div>
+            {/* Main content - scrollbar visible above input and header */}
+            <main className="flex-1 overflow-y-auto pt-[90px] pb-32 px-2 sm:px-6 lg:px-8 max-w-full relative z-10">
+                <div className="max-w-7xl mx-auto">
+                    <div className="text-center my-6 sm:my-8 space-y-4">
+                        <h2 className="text-xl sm:text-2xl md:text-3xl font-medium text-gray-600 leading-tight">
+                            Good day! How may I assist you today?
+                        </h2>
+                        <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                            You can select from the options below or feel free to type your questions.
+                        </p>
                     </div>
 
-                    {/* FAQ Cards organized by Department */}
-                    <div className="mb-12">
+                    {/* FAQ Cards */}
+                    <div className="mb-8">
                         {faqsLoading ? (
-                            <div className="flex justify-center py-12">
-                                <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#205781] border-t-transparent"></div>
+                            <div className="flex justify-center py-8">
+                                <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#205781] border-t-transparent" />
                             </div>
-                        ) : faqsByDepartment && faqsByDepartment.length > 0 ? (
+                        ) : faqsByDepartment?.length > 0 ? (
                             <div className="overflow-x-auto lg:overflow-visible pb-4">
-                                <div className="flex gap-6 min-w-max lg:flex-wrap lg:justify-center lg:min-w-0 px-4 sm:px-6">
+                                <div className="flex gap-4 min-w-max lg:flex-wrap lg:justify-center lg:min-w-0">
                                     {faqsByDepartment.map((dept) => (
                                         <div
                                             key={dept.department_id}
-                                            className="border border-gray-200 rounded-xl p-5 w-72 lg:w-80 xl:w-72 flex-shrink-0 bg-white hover:border-[#205781]/20 transition-all duration-200 shadow-sm hover:shadow-md"
+                                            className="border border-gray-200 rounded-xl p-4 w-64 lg:w-72 flex-shrink-0 bg-white hover:border-[#205781]/20 transition-all shadow-sm hover:shadow-md"
                                         >
-                                            <h2 className="font-semibold text-center mb-4 text-gray-800 text-sm sm:text-base line-clamp-2">
+                                            <h2 className="font-semibold text-center mb-3 text-gray-800 text-sm line-clamp-2">
                                                 {dept.department_name || "General"}
                                             </h2>
-                                            <div className="space-y-2.5 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                                                {dept.faqs && dept.faqs.length > 0 ? (
+                                            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                                                {dept.faqs?.length > 0 ? (
                                                     dept.faqs.map((faq) => (
                                                         <button
                                                             key={faq.faq_id}
                                                             onClick={() => handlePreTypeQuestion(faq.full_question)}
                                                             disabled={isLoading}
-                                                            className="w-full bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-gray-600 text-xs sm:text-sm px-4 py-2.5 rounded-lg transition-all duration-200 text-left line-clamp-2 font-medium shadow-sm hover:shadow-md border border-gray-200"
+                                                            className="w-full bg-white hover:bg-gray-50 disabled:opacity-50 text-gray-600 text-xs px-3 py-2 rounded-lg transition text-left line-clamp-2 font-medium shadow-sm border border-gray-200"
                                                             title={faq.full_question}
                                                         >
                                                             {faq.question}
                                                         </button>
                                                     ))
                                                 ) : (
-                                                    <p className="text-sm text-gray-400 text-center py-4">No FAQs available</p>
+                                                    <p className="text-xs text-gray-400 text-center py-2">No FAQs available</p>
                                                 )}
                                             </div>
                                         </div>
@@ -275,14 +254,14 @@ export default function FAQS() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="text-center py-12 text-gray-500">
-                                <p className="text-lg">No FAQs available at the moment.</p>
+                            <div className="text-center py-8 text-gray-500">
+                                <p>No FAQs available at the moment.</p>
                             </div>
                         )}
                     </div>
 
                     {/* Chat Messages */}
-                    <div className="space-y-4 max-w-3xl mx-auto px-4 sm:px-6">
+                    <div className="space-y-4 max-w-3xl mx-auto">
                         {messages.map((message) => {
                             if (message.type === 'user') {
                                 return <UserMessage key={message.id} message={message.content} />;
@@ -296,46 +275,41 @@ export default function FAQS() {
                             <div className="flex justify-start mb-6">
                                 <div className="max-w-[85%] sm:max-w-[75%] bg-white/90 backdrop-blur-sm rounded-2xl rounded-bl-md px-5 py-3.5 shadow-sm border border-gray-100">
                                     <div className="flex items-center space-x-2">
-                                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#205781] border-t-transparent"></div>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#205781] border-t-transparent" />
                                     </div>
                                 </div>
                             </div>
                         )}
-
                         <div ref={messagesEndRef} />
                     </div>
                 </div>
             </main>
 
-            {/* Chat Input */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-lg z-30">
-                <div className="transition-all duration-300 ease-in-out">
-                    <div className="max-w-5xl mx-auto p-3 sm:p-4 lg:p-5">
-                        <form onSubmit={submit} className="relative">
-                            <input
-                                className="w-full border border-gray-300 rounded-2xl py-3.5 sm:py-4 px-4 sm:px-6 pr-20 sm:pr-24 focus:ring-2 focus:outline-none focus:ring-[#205781]/10 focus:border-[#205781] text-sm sm:text-base placeholder-gray-500 bg-white transition-all duration-200 shadow-sm"
-                                value={prompt}
-                                onChange={handleInputChange}
-                                onPaste={handlePaste}
-                                placeholder="Ask here..."
-                                disabled={isLoading}
-                                maxLength={100}
-                            />
-                            <div className="absolute right-14 sm:right-16 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium bg-white rounded px-1 py-0.5">
-                                {prompt.length}/100
-                            </div>
-                            <button
-                                className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 p-2.5 sm:p-3 text-[#205781] bg-white hover:bg-gray-50 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md border border-[#205781]/20"
-                                type="submit"
-                                disabled={isLoading || !prompt.trim()}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 sm:w-5 sm:h-5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
-                                </svg>
-                            </button>
-                        </form>
+            {/* Chat Input - Fixed at bottom */}
+            <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 z-20 p-3 sm:p-4">
+                <form onSubmit={submit} className="max-w-3xl mx-auto relative">
+                    <input
+                        className="w-full border border-gray-300 rounded-2xl py-3 px-4 pr-16 focus:ring-2 focus:outline-none focus:ring-[#205781]/10 focus:border-[#205781] text-sm placeholder-gray-500 bg-white shadow-sm"
+                        value={prompt}
+                        onChange={handleInputChange}
+                        onPaste={handlePaste}
+                        placeholder="Ask here..."
+                        disabled={isLoading}
+                        maxLength={100}
+                    />
+                    <div className="absolute right-12 top-1/2 -translate-y-1/2 text-xs text-gray-400 bg-white rounded px-1">
+                        {prompt.length}/100
                     </div>
-                </div>
+                    <button
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-[#205781] bg-white rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm border border-[#205781]/20"
+                        type="submit"
+                        disabled={isLoading || !prompt.trim()}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+                        </svg>
+                    </button>
+                </form>
             </div>
         </div>
     );

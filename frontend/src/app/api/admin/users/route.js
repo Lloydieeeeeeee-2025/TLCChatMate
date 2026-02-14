@@ -15,11 +15,51 @@ export async function GET() {
 
 export async function DELETE(request) {
     try {
-        const { id } = await request.json();
-        await chatmate.query(`DELETE FROM User WHERE user_id = ?`, [id]);
-        return NextResponse.json({ success: true, message: "User deleted successfully" }, { status: 200 });
+        const body = await request.json();
+        const userId = body.user_id || body.id;
+
+        if (!userId) {
+            return NextResponse.json(
+                { success: false, message: "User ID is required" },
+                { status: 400 }
+            );
+        }
+
+        // Check if user exists before deleting
+        const [existingUser] = await chatmate.query(
+            `SELECT user_id FROM User WHERE user_id = ?`,
+            [userId]
+        );
+
+        if (!existingUser || existingUser.length === 0) {
+            return NextResponse.json(
+                { success: false, message: "User not found" },
+                { status: 404 }
+            );
+        }
+
+        // Delete the user
+        const [result] = await chatmate.query(
+            `DELETE FROM User WHERE user_id = ?`,
+            [userId]
+        );
+
+        if (result.affectedRows === 0) {
+            return NextResponse.json(
+                { success: false, message: "Failed to delete user" },
+                { status: 500 }
+            );
+        }
+
+        return NextResponse.json(
+            { success: true, message: "User deleted successfully" },
+            { status: 200 }
+        );
     } catch (error) {
-        return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+        return NextResponse.json(
+            { success: false, message: error.message },
+            { status: 500 }
+        );
     }
 }
 

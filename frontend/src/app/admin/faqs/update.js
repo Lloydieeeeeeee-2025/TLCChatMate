@@ -1,20 +1,33 @@
 "use client"
 import { useState, useEffect } from "react"
 
-export default function Update({ open, close, selectedFaqRow }) {
+export default function Update({ open, close, selectedFaqRow, onChanges, onSuccess }) {
     const [departmentName, setDepartmentName] = useState("")
     const [faqInputField, setFaqInputField] = useState("")
     const [faqError, setFaqError] = useState("")
     const [faqsList, setFaqsList] = useState([])
     const [loading, setLoading] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [initialFaqsList, setInitialFaqsList] = useState([])
+    const [hasMadeServerChanges, setHasMadeServerChanges] = useState(false)
 
     useEffect(() => {
         if (open && selectedFaqRow) {
             setDepartmentName(selectedFaqRow.department_name || "")
             fetchFaqsForDepartment(selectedFaqRow.department_id)
+            setFaqInputField("")
+            setFaqError("")
+            setHasMadeServerChanges(false)
         }
     }, [open, selectedFaqRow])
+
+    useEffect(() => {
+        // Check if anything has changed
+        const hasChanged = JSON.stringify(initialFaqsList) !== JSON.stringify(faqsList) || faqInputField.trim() !== ""
+        if (onChanges) {
+            onChanges(hasChanged)
+        }
+    }, [faqsList, initialFaqsList, faqInputField, onChanges])
 
     const fetchFaqsForDepartment = async (departmentId) => {
         setLoading(true)
@@ -23,12 +36,15 @@ export default function Update({ open, close, selectedFaqRow }) {
             if (response.ok) {
                 const data = await response.json()
                 if (data.success) {
-                    setFaqsList(Array.isArray(data.data) ? data.data : [])
+                    const faqs = Array.isArray(data.data) ? data.data : []
+                    setFaqsList(faqs)
+                    setInitialFaqsList(faqs)
                 }
             }
         } catch (err) {
             console.error("Error fetching FAQs:", err)
             setFaqsList([])
+            setInitialFaqsList([])
         } finally {
             setLoading(false)
         }
@@ -79,6 +95,7 @@ export default function Update({ open, close, selectedFaqRow }) {
 
             setFaqInputField("")
             await fetchFaqsForDepartment(selectedFaqRow.department_id)
+            setHasMadeServerChanges(true)
         } catch (err) {
             console.error("Error:", err)
             setFaqError("An error occurred while adding the FAQ.")
@@ -102,20 +119,29 @@ export default function Update({ open, close, selectedFaqRow }) {
             }
 
             await fetchFaqsForDepartment(selectedFaqRow.department_id)
+            setHasMadeServerChanges(true)
         } catch (err) {
             console.error("Error:", err)
             setFaqError("An error occurred while deleting the FAQ.")
         }
     }
 
+    const handleClose = () => {
+        if (hasMadeServerChanges && onSuccess) {
+            onSuccess();
+        } else {
+            close();
+        }
+    };
+
     return (
         <main>
-            <div className={`fixed inset-0 ${open ? "opacity-50" : "opacity-0 pointer-events-none"}`} onClick={close}></div>
+            <div className={`fixed inset-0 ${open ? "opacity-50" : "opacity-0 pointer-events-none"}`} onClick={handleClose}></div>
             <div className={`fixed top-0 right-0 h-full w-full md:w-[35%] bg-white border-l border-gray-200 transform transition-transform duration-300 ${open ? "translate-x-0" : "translate-x-full"}`}>
                 <div className="flex flex-col h-full p-5 space-y-4">
                     <div className="flex items-center justify-between">
                         <h2 className="text-lg font-semibold">Update FAQ</h2>
-                        <button onClick={close} className="text-gray-600 hover:text-black">
+                        <button onClick={handleClose} className="text-gray-600 hover:text-black">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                             </svg>
@@ -134,7 +160,7 @@ export default function Update({ open, close, selectedFaqRow }) {
                                 <div>
                                     <div className="mb-4 w-full flex justify-between items-center">
                                         <h2 className="text-lg font-semibold mb-2">Department</h2>
-                                        <button onClick={close} className="text-gray-600 hover:text-black">
+                                        <button onClick={handleClose} className="text-gray-600 hover:text-black">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                                             </svg>
@@ -199,7 +225,7 @@ export default function Update({ open, close, selectedFaqRow }) {
 
                     <button
                         className="w-full bg-gray-200 hover:bg-gray-300 transition duration-400 p-2.5 rounded font-medium"
-                        onClick={close}
+                        onClick={handleClose}
                     >
                         Close
                     </button>

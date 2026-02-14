@@ -6,11 +6,25 @@ export default function Create({ open, close }) {
     const [linkUrlError, setLinkUrlError] = useState("")
     const [description, setDescription] = useState("")
 
+    const isValidUrl = (string) => {
+        try {
+            new URL(string)
+            return true
+        } catch (_) {
+            return false
+        }
+    }
+
     const submit = async () => {
         setLinkUrlError("")
 
         if (!linkUrl) {
             setLinkUrlError("Please enter a valid URL.")
+            return
+        }
+
+        if (!isValidUrl(linkUrl)) {
+            setLinkUrlError("Please enter a valid URL format (e.g., https://example.com).")
             return
         }
 
@@ -78,7 +92,7 @@ export default function Create({ open, close }) {
                                 </div>
                                 <div className="space-y-2">
                                     <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
-                                    <input id="description" name="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Enter URL description" rows="4" className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"/>
+                                    <input id="description" name="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Enter URL description" rows="4" className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent" />
                                 </div>
                             </div>
                         </div>

@@ -52,6 +52,12 @@ export default function HandbookUpdate({ open, close, selectedHandbookRow, onUpd
 
         if (!isValid) return
 
+        // Check if data actually changed
+        if (handbookName === (selectedHandbookRow?.handbook_name || "") && !handbookDocument) {
+            close();
+            return;
+        }
+
         setUpdateProgress(true)
 
         try {
@@ -79,10 +85,8 @@ export default function HandbookUpdate({ open, close, selectedHandbookRow, onUpd
                 onUpdate()
             }
 
-            setTimeout(() => {
-                close()
-                setUpdateProgress(false)
-            }, 1500)
+            close()
+            setUpdateProgress(false)
         } catch (err) {
             setHandbookDocumentError("An error occurred while updating the handbook")
             setUpdateProgress(false)

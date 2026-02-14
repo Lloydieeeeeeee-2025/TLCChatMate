@@ -1,7 +1,7 @@
 "use client"
 import { useState } from "react"
 
-export default function Create({ open, close, onFaqCreated }) {
+export default function Create({ open, close, onSuccess }) {
     const [departmentInputField, setDepartmentInputField] = useState("")
     const [faqInputField, setFaqInputField] = useState("")
     const [departmentError, setDepartmentError] = useState("")
@@ -102,8 +102,11 @@ export default function Create({ open, close, onFaqCreated }) {
             setDepartmentInputField("")
             setFaqsList([])
             setFaqInputField("")
-            onFaqCreated()
-            close()
+            if (onSuccess) {
+                onSuccess()
+            } else {
+                close()
+            }
         } catch (err) {
             console.error("Error:", err)
             setDepartmentError("An error occurred while creating the department and FAQs.")
