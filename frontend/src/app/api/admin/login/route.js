@@ -14,7 +14,7 @@ export async function POST(request) {
         }
 
         const [userRows] = await chatmate.query(
-            "SELECT user_id, user_name, user_password FROM User WHERE user_name = ?",
+            "SELECT user_id, user_name, user_password FROM `User` WHERE user_name = ?",
             [user_name]
         );
 
