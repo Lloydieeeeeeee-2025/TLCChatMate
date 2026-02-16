@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import { chatmate } from "../../../../../library/tlcchatmatedb/route";
 import bcrypt from "bcryptjs";
 
-//
 export async function GET() {
     try {
-        const [users] = await chatmate.query("SELECT user_id, user_name FROM `user`");
+        const [users] = await chatmate.query("SELECT user_id, user_name FROM User");
 
         return NextResponse.json({ success: true, data: users }, { status: 200 });
     } catch (error) {
+        console.error("GET error:", error);
         return NextResponse.json({ success: false, message: error.message }, { status: 500 });
     }
 }
@@ -27,7 +27,7 @@ export async function DELETE(request) {
 
         // Check if user exists before deleting
         const [existingUser] = await chatmate.query(
-            "SELECT user_id FROM `user` WHERE user_id = ?",
+            "SELECT user_id FROM User WHERE user_id = ?",
             [userId]
         );
 
@@ -40,7 +40,7 @@ export async function DELETE(request) {
 
         // Delete the user
         const [result] = await chatmate.query(
-            "DELETE FROM `user` WHERE user_id = ?",
+            "DELETE FROM User WHERE user_id = ?",
             [userId]
         );
 
@@ -56,6 +56,7 @@ export async function DELETE(request) {
             { status: 200 }
         );
     } catch (error) {
+        console.error("DELETE error:", error);
         return NextResponse.json(
             { success: false, message: error.message },
             { status: 500 }
@@ -72,21 +73,21 @@ export async function PUT(request) {
         }
 
         // Verify user exists and fetch current password for validation
-        const [user] = await chatmate.query("SELECT user_password FROM `user` WHERE user_id = ?", [user_id]);
+        const [user] = await chatmate.query("SELECT user_password FROM User WHERE user_id = ?", [user_id]);
         if (!user || user.length === 0) {
             return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
         }
 
         // Validate username uniqueness (excluding the current user)
         const [existingUser] = await chatmate.query(
-            "SELECT user_id FROM `user` WHERE user_name = ? AND user_id != ?",
+            "SELECT user_id FROM User WHERE user_name = ? AND user_id != ?",
             [user_name, user_id]
         );
         if (existingUser.length > 0) {
             return NextResponse.json({ success: false, message: "Username is already taken" }, { status: 409 });
         }
 
-        let updateQuery = "UPDATE `user` SET user_name = ?";
+        let updateQuery = "UPDATE User SET user_name = ?";
         const queryParams = [user_name];
 
         // Handle password update if provided
@@ -121,6 +122,7 @@ export async function PUT(request) {
 
         return NextResponse.json({ success: true, message: "User updated successfully" }, { status: 200 });
     } catch (error) {
+        console.error("PUT error:", error);
         return NextResponse.json({ success: false, message: error.message }, { status: 500 });
     }
 }
@@ -147,7 +149,7 @@ export async function POST(request) {
 
         // Check if username already exists
         const [existingUser] = await chatmate.query(
-            "SELECT user_id FROM `user` WHERE user_name = ?",
+            "SELECT user_id FROM User WHERE user_name = ?",
             [user_name]
         );
         if (existingUser.length > 0) {
@@ -169,7 +171,7 @@ export async function POST(request) {
         const hashedPassword = await bcrypt.hash(user_password, salt);
 
         await chatmate.query(
-            "INSERT INTO `user` (user_name, user_password) VALUES (?, ?)",
+            "INSERT INTO User (user_name, user_password) VALUES (?, ?)",
             [user_name, hashedPassword]
         );
 
@@ -179,6 +181,7 @@ export async function POST(request) {
         );
 
     } catch (error) {
+        console.error("POST error:", error);
         return NextResponse.json(
             { success: false, message: "Server error during registration." },
             { status: 500 }
