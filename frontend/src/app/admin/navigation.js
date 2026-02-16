@@ -20,7 +20,7 @@ export default function Navigation() {
         if (storedUserData) {
             setUserData(JSON.parse(storedUserData))
         } else {
-            router.push("/admin/login")
+            router.push("/")
         }
 
         checkUpdates()

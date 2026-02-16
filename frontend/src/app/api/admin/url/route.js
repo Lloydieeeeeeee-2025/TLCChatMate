@@ -24,7 +24,7 @@ export async function POST(request) {
         }
 
         const [result] = await chatmate.execute(
-            "INSERT INTO url (link_url, description) VALUES (?, ?)",
+            "INSERT INTO `url` (link_url, description) VALUES (?, ?)",
             [link_url, description || null]
         );
 
