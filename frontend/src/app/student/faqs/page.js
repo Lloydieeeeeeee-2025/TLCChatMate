@@ -11,6 +11,7 @@ export default function FAQS() {
     const [faqsByDepartment, setFaqsByDepartment] = useState([]);
     const [faqsLoading, setFaqsLoading] = useState(true);
     const messagesEndRef = useRef(null);
+    const textareaRef = useRef(null);
 
     // Initialize session on mount
     useEffect(() => {
@@ -83,11 +84,30 @@ export default function FAQS() {
         const value = e.target.value;
         if (value.length <= 100) {
             setPrompt(value);
+            // Auto-resize textarea up to 5 rows
+            const textarea = textareaRef.current;
+            if (textarea) {
+                textarea.style.height = 'auto';
+                const lineHeight = 24; // ~1.5rem line height
+                const paddingY = 24;   // py-3 top + bottom
+                const maxHeight = lineHeight * 5 + paddingY;
+                textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px';
+            }
         }
     };
 
     const handlePaste = (e) => {
         e.preventDefault();
+    };
+
+    // Submit on Enter, allow Shift+Enter for new line (won't actually insert due to maxLength logic)
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (!isLoading && prompt.trim()) {
+                handleSubmitQuestion();
+            }
+        }
     };
 
     const UserMessage = ({ message }) => {
@@ -143,7 +163,11 @@ export default function FAQS() {
         setMessages(prev => [...prev, newUserMessage]);
 
         if (!questionText) {
-            setPrompt(" ");
+            setPrompt("");
+            // Reset textarea height after clearing
+            if (textareaRef.current) {
+                textareaRef.current.style.height = 'auto';
+            }
         }
 
         setIsLoading(true);
@@ -287,28 +311,77 @@ export default function FAQS() {
 
             {/* Chat Input - Fixed at bottom */}
             <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 z-20 p-3 sm:p-4">
-                <form onSubmit={submit} className="max-w-3xl mx-auto relative">
-                    <input
-                        className="w-full border border-gray-300 rounded-2xl py-3 px-4 pr-16 focus:ring-2 focus:outline-none focus:ring-[#205781]/10 focus:border-[#205781] text-sm placeholder-gray-500 bg-white shadow-sm"
-                        value={prompt}
-                        onChange={handleInputChange}
-                        onPaste={handlePaste}
-                        placeholder="Ask here..."
-                        disabled={isLoading}
-                        maxLength={100}
-                    />
-                    <div className="absolute right-12 top-1/2 -translate-y-1/2 text-xs text-gray-400 bg-white rounded px-1">
-                        {prompt.length}/100
+                {/* Scoped scrollbar styles: keeps the scrollbar visually inside the rounded border */}
+                <style>{`
+                    .chat-textarea::-webkit-scrollbar {
+                        width: 6px;
+                    }
+                    .chat-textarea::-webkit-scrollbar-track {
+                        background: transparent;
+                        margin: 10px 0;
+                    }
+                    .chat-textarea::-webkit-scrollbar-thumb {
+                        background-color: #cbd5e1;
+                        border-radius: 999px;
+                    }
+                    .chat-textarea::-webkit-scrollbar-thumb:hover {
+                        background-color: #94a3b8;
+                    }
+                    /* Firefox */
+                    .chat-textarea {
+                        scrollbar-width: thin;
+                        scrollbar-color: #cbd5e1 transparent;
+                    }
+                `}</style>
+
+                <form onSubmit={submit} className="max-w-3xl mx-auto">
+                    {/* Character count shown above textarea */}
+                    <div className="flex justify-end mb-1 px-1">
+                        <span className="text-xs text-gray-400">{prompt.length}/100</span>
                     </div>
-                    <button
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-[#205781] bg-white rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm border border-[#205781]/20"
-                        type="submit"
-                        disabled={isLoading || !prompt.trim()}
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
-                        </svg>
-                    </button>
+                    <div className="flex items-end gap-2">
+                        {/*
+                            Wrapper clips the scrollbar so it never bleeds outside the rounded border.
+                            overflow-hidden + rounded-2xl + border here replaces the border on textarea itself.
+                        */}
+                        <div
+                            className="flex-1 border border-gray-300 rounded-2xl shadow-sm overflow-hidden
+                                       focus-within:ring-2 focus-within:ring-[#205781]/10 focus-within:border-[#205781]
+                                       transition-colors"
+                        >
+                            <textarea
+                                ref={textareaRef}
+                                className="
+                                    chat-textarea
+                                    w-full py-3 px-4
+                                    focus:outline-none
+                                    text-sm placeholder-gray-500
+                                    bg-white text-gray-900
+                                    [color-scheme:light]
+                                    resize-none overflow-y-auto leading-6
+                                    disabled:opacity-60
+                                "
+                                style={{ minHeight: '48px', maxHeight: '144px' }}
+                                rows={1}
+                                value={prompt}
+                                onChange={handleInputChange}
+                                onPaste={handlePaste}
+                                onKeyDown={handleKeyDown}
+                                placeholder="Ask here..."
+                                disabled={isLoading}
+                                maxLength={100}
+                            />
+                        </div>
+                        <button
+                            className="flex-shrink-0 p-2 text-[#205781] bg-white rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm border border-[#205781]/20 mb-0.5"
+                            type="submit"
+                            disabled={isLoading || !prompt.trim()}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+                            </svg>
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
