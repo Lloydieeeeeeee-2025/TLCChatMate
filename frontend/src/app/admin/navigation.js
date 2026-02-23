@@ -19,12 +19,16 @@ export default function Navigation() {
         const storedUserData = localStorage.getItem("userData")
         if (storedUserData) {
             setUserData(JSON.parse(storedUserData))
-        } else {
+        } else if (get_current_page.startsWith("/admin")) {
             router.push("/")
         }
 
+        checkSession()
         checkUpdates()
         checkInitialSyncStatus()
+
+        // Periodically check session (every 10 seconds)
+        const sessionInterval = setInterval(checkSession, 10000)
 
         // Periodically check for updates if not syncing
         const updateInterval = setInterval(() => {
@@ -32,10 +36,29 @@ export default function Navigation() {
         }, 30000)
 
         return () => {
+            clearInterval(sessionInterval)
             clearInterval(updateInterval)
             if (pollingInterval.current) clearInterval(pollingInterval.current)
         }
     }, [router])
+
+    const checkSession = async () => {
+        try {
+            const response = await fetch("/api/admin/session-check")
+            if (!response.ok) {
+                // Session expired or invalid
+                localStorage.removeItem("userData")
+                setUserData(null)
+
+                // Only redirect if we are currently on an admin page
+                if (get_current_page.startsWith("/admin")) {
+                    router.push("/")
+                }
+            }
+        } catch (error) {
+            console.error("Error checking session:", error)
+        }
+    }
 
     const checkUpdates = async () => {
         try {
@@ -273,9 +296,14 @@ export default function Navigation() {
                                             </Link>
 
                                             <button
-                                                onClick={() => {
-                                                    localStorage.removeItem("userData")
-                                                    router.push("/")
+                                                onClick={async () => {
+                                                    try {
+                                                        await fetch("/api/admin/logout", { method: "POST" });
+                                                    } catch (error) {
+                                                        console.error("Logout failed:", error);
+                                                    }
+                                                    localStorage.removeItem("userData");
+                                                    router.push("/");
                                                 }}
                                                 className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150"
                                             >

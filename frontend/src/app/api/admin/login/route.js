@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { chatmate } from "../../../../../library/tlcchatmatedb/route";
 import bcrypt from "bcryptjs";
 
+import { cookies } from "next/headers";
+
 export async function POST(request) {
     try {
         const { user_name, user_password } = await request.json();
@@ -37,6 +39,16 @@ export async function POST(request) {
                 { status: 401 }
             );
         }
+
+        // Set session cookie
+        const cookieStore = await cookies();
+        cookieStore.set("session", authenticatedUser.user_id.toString(), {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 30 * 60, // 30 minutes
+            path: "/",
+        });
 
         return NextResponse.json(
             {

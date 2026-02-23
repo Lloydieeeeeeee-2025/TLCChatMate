@@ -65,66 +65,42 @@ export default function Create({ open, close, onSuccess }) {
     }
 
     return (
-        <main className="z-500">
+        <main className="z-50">
             <div className={`fixed inset-0 duration-300 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`} onClick={close}></div>
             <div className={`fixed top-0 right-0 h-full w-full md:w-[30%] bg-white border-l border-gray-200 transform transition-transform duration-300 ${open ? "translate-x-0" : "translate-x-full"}`}>
                 <div className="flex flex-col h-full p-5 space-y-4">
                     <div>
-                        <button onClick={close} className="text-gray-600 hover:text-black">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                            </svg>
-                        </button>
+                        <button onClick={close} className="text-gray-600 hover:text-gray-900"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg></button>
                     </div>
                     <div className="flex flex-col h-full">
                         <div className="mb-4 w-full flex justify-between items-center">
-                            <h2 className="text-lg font-semibold mb-2">Add New Administrator</h2>
-                            <button onClick={close} className="text-gray-600 hover:text-black">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                                </svg>
-                            </button>
+                            <h2 className="text-lg font-semibold text-gray-900 mb-2">Add New Administrator</h2>
+                            <button onClick={close} className="text-gray-600 hover:text-gray-900"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg></button>
                         </div>
                         <div className="w-full flex-1 overflow-y-auto">
                             <div className="space-y-4 md:space-y-6">
                                 <div className="space-y-2">
-                                    <label htmlFor="username" className="block text-sm font-medium text-gray-700">Username</label>
-                                    <input
-                                        type="text"
-                                        id="username"
-                                        name="username"
-                                        value={userName}
-                                        onChange={(e) => setUserName(e.target.value)}
-                                        placeholder="Username"
-                                        className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"
-                                    />
+                                    <label htmlFor="username" className="block text-sm font-medium text-gray-800">Username</label>
+                                    <input type="text" id="username" name="username" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="Username" className="w-full bg-white border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent text-black caret-black placeholder-gray-500" />
                                     {userNameError && <span className="text-red-600 text-sm mt-1 block">{userNameError}</span>}
                                 </div>
                                 <div className="pt-4 border-t border-gray-200">
-                                    <h3 className="text-lg font-medium text-gray-800 mb-3">Create Password</h3>
+                                    <h3 className="text-lg font-medium text-gray-900 mb-3">Create Password</h3>
                                     <div className="space-y-2">
-                                        <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
-                                        <input
-                                            type="password"
-                                            id="password"
-                                            name="password"
-                                            value={userPassword}
-                                            onChange={(e) => setUserPassword(e.target.value)}
-                                            placeholder="••••••••"
-                                            className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"
-                                        />
+                                        <label htmlFor="password" className="block text-sm font-medium text-gray-800">Password</label>
+                                        <input type="password" id="password" name="password" value={userPassword} onChange={(e) => setUserPassword(e.target.value)} placeholder="••••••••" className="w-full bg-white border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent text-black caret-black placeholder-gray-500" />
                                         {userPasswordError && <span className="text-red-600 text-sm mt-1 block">{userPasswordError}</span>}
                                     </div>
                                     <div className="space-y-2">
-                                        <label htmlFor="verifyPassword" className="block text-sm font-medium text-gray-700">Verify Password</label>
-                                        <input type="password" id="verifyPassword" name="verifyPassword" value={verifyUserPassword} onChange={(e) => setVerifyUserPassword(e.target.value)} placeholder="••••••••" className="w-full border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent" />
+                                        <label htmlFor="verifyPassword" className="block text-sm font-medium text-gray-800">Verify Password</label>
+                                        <input type="password" id="verifyPassword" name="verifyPassword" value={verifyUserPassword} onChange={(e) => setVerifyUserPassword(e.target.value)} placeholder="••••••••" className="w-full bg-white border border-gray-200 p-2 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent text-black caret-black placeholder-gray-500" />
                                         {verifyUserPasswordError && <span className="text-red-600 text-sm mt-1 block">{verifyUserPasswordError}</span>}
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <button className="w-full bg-gray-200 hover:bg-gray-300 transition duration-400 p-2 rounded-lg" onClick={submit}>Save</button>
+                    <button className="w-full bg-gray-200 hover:bg-gray-300 text-gray-900 transition duration-400 p-2 rounded-lg" onClick={submit}>Save</button>
                 </div>
             </div>
         </main>

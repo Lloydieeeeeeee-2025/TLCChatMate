@@ -15,7 +15,6 @@ export const chatmate = mysql.createPool({
 
 
 /*
-
 // localhost
 export const chatmate = mysql.createPool({
     host: "localhost",

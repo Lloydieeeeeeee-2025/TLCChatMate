@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { chatmate } from "../../../../../library/tlcchatmatedb/route";
 import bcrypt from "bcryptjs";
+import { cookies } from "next/headers";
 
 //
 export async function GET() {
@@ -117,6 +118,20 @@ export async function PUT(request) {
 
         if (result.affectedRows === 0) {
             return NextResponse.json({ success: false, message: "Failed to update user" }, { status: 500 });
+        }
+
+        // If password was changed, and it was the current user, clear session
+        if (currentPassword && newPassword) {
+            const cookieStore = await cookies();
+            const sessionCookie = cookieStore.get("session");
+            if (sessionCookie && sessionCookie.value === user_id.toString()) {
+                cookieStore.delete("session");
+                return NextResponse.json({
+                    success: true,
+                    message: "Password updated successfully. You have been logged out for security.",
+                    loggedOut: true
+                }, { status: 200 });
+            }
         }
 
         return NextResponse.json({ success: true, message: "User updated successfully" }, { status: 200 });

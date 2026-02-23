@@ -58,14 +58,14 @@ export default function FAQS() {
 
         // Set up real-time polling for FAQ updates
         const pollInterval = setInterval(() => {
-            console.log('🔄 Polling FAQs for updates...');
+            console.log('Polling FAQs for updates...');
             fetchFaqs();
         }, 30000); // Poll every 30 seconds
 
         // Cleanup interval on component unmount
         return () => {
             clearInterval(pollInterval);
-            console.log('✓ FAQ polling stopped');
+            console.log('FAQ polling stopped');
         };
     }, []);
 

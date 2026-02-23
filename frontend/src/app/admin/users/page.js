@@ -98,8 +98,10 @@ function UsersContent() {
         if (storedUserData) {
             const userData = JSON.parse(storedUserData);
             if (String(deletedId) === String(userData.user_id)) {
-                localStorage.removeItem("userData");
-                window.location.href = "/";
+                fetch("/api/admin/logout", { method: "POST" }).finally(() => {
+                    localStorage.removeItem("userData");
+                    window.location.href = "/";
+                });
                 return;
             }
         }

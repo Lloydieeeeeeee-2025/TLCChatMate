@@ -72,18 +72,58 @@ export default function Login() {
                     <p className="font-bold text-gray-600 mb-2 text-center">Access your account</p>
                     {errorMessage && <span className="text-red-600 text-sm text-center mb-4">{errorMessage}</span>}
                     <div className="mb-6">
+                        {/* Username Field */}
                         <div className="relative mb-2">
                             {focusedInput === "username" && (
-                                <label htmlFor="username" className={`absolute -top-2 bg-white px-1 left-3 rounded-xl text-xs transition-all ${userName ? "text-[#205781]" : "text-gray-400"}`}>Username</label>
+                                <label
+                                    htmlFor="username"
+                                    className={`absolute -top-2 bg-white px-1 left-3 rounded-xl text-xs transition-all ${userName ? "text-[#205781]" : "text-gray-400"
+                                        }`}
+                                >
+                                    Adminname
+                                </label>
                             )}
-                            <input type="text" placeholder="Username" id="username" value={userName} className={`block w-full bg-white p-2 rounded-lg outline-none transition-all ${userName ? "border border-[#205781]" : "border border-gray-400"}`} onChange={(e) => setUserName(e.target.value)} onFocus={() => handleInputFocus("username")} onBlur={() => handleInputBlur("username", userName)} />
+                            <input
+                                type="text"
+                                placeholder="admin"
+                                id="username"
+                                value={userName}
+                                className={`block w-full bg-white p-2 rounded-lg outline-none transition-all text-black caret-black placeholder-gray-500 ${userName ? "border border-[#205781]" : "border border-gray-400"
+                                    }`}
+                                onChange={(e) => setUserName(e.target.value)}
+                                onFocus={() => handleInputFocus("username")}
+                                onBlur={() => handleInputBlur("username", userName)}
+                            />
                         </div>
+
+                        {/* Password Field */}
                         <div className="relative mb-2">
                             {focusedInput === "password" && (
-                                <label htmlFor="password" className={`absolute -top-2 bg-white px-1 left-3 rounded-xl text-xs transition-all ${userPassword ? "text-[#205781]" : "text-gray-400"}`}>Password</label>
+                                <label
+                                    htmlFor="password"
+                                    className={`absolute -top-2 bg-white px-1 left-3 rounded-xl text-xs transition-all ${userPassword ? "text-[#205781]" : "text-gray-400"
+                                        }`}
+                                >
+                                    Password
+                                </label>
                             )}
-                            <input type={showPassword ? "text" : "password"} placeholder="Password" id="password" value={userPassword} className={`block w-full bg-white p-2 rounded-lg outline-none transition-all ${userPassword ? "border border-[#205781]" : "border border-gray-400"}`} onChange={(e) => setUserPassword(e.target.value)} onFocus={() => handleInputFocus("password")} onBlur={() => handleInputBlur("password", userPassword)} />
-                            <button className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400" type="button" onClick={() => setShowPassword((prev) => !prev)} aria-label={showPassword ? "Hide password" : "Show password"}>
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                placeholder="Password"
+                                id="password"
+                                value={userPassword}
+                                className={`block w-full bg-white p-2 rounded-lg outline-none transition-all text-black caret-black placeholder-gray-500 ${userPassword ? "border border-[#205781]" : "border border-gray-400"
+                                    }`}
+                                onChange={(e) => setUserPassword(e.target.value)}
+                                onFocus={() => handleInputFocus("password")}
+                                onBlur={() => handleInputBlur("password", userPassword)}
+                            />
+                            <button
+                                className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600 transition-colors"
+                                type="button"
+                                onClick={() => setShowPassword((prev) => !prev)}
+                                aria-label={showPassword ? "Hide password" : "Show password"}
+                            >
                                 {showPassword ? (
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
