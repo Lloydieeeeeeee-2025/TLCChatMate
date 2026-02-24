@@ -21,11 +21,9 @@ export default function FAQS() {
             let sessionId;
             if (storedSessionId) {
                 sessionId = storedSessionId;
-                console.log('✓ Resuming existing session:', sessionId);
             } else {
                 sessionId = 'session_' + crypto.randomUUID();
                 localStorage.setItem('tlc_chatmate_session_id', sessionId);
-                console.log('✓ Created new session:', sessionId);
             }
 
             setConversationSession(sessionId);
@@ -43,11 +41,10 @@ export default function FAQS() {
                     const data = await response.json();
                     if (data.success && data.data) {
                         setFaqsByDepartment(data.data);
-                        console.log('✓ FAQs updated successfully');
                     }
                 }
             } catch (error) {
-                console.error("Error fetching FAQs: ", error);
+                // Error handling without console output
             } finally {
                 setFaqsLoading(false);
             }
@@ -58,14 +55,12 @@ export default function FAQS() {
 
         // Set up real-time polling for FAQ updates
         const pollInterval = setInterval(() => {
-            console.log('Polling FAQs for updates...');
             fetchFaqs();
         }, 30000); // Poll every 30 seconds
 
         // Cleanup interval on component unmount
         return () => {
             clearInterval(pollInterval);
-            console.log('FAQ polling stopped');
         };
     }, []);
 
@@ -152,7 +147,6 @@ export default function FAQS() {
 
     const handleSubmitQuestion = async (questionText = null) => {
         if (!conversationSession) {
-            console.error("✗ Session not initialized");
             return;
         }
 
@@ -173,8 +167,6 @@ export default function FAQS() {
         setIsLoading(true);
 
         try {
-            console.log(`📤 Sending to session: ${conversationSession}`);
-
             const response = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -189,13 +181,11 @@ export default function FAQS() {
                 if (data.success) {
                     const aiMessage = { type: 'ai', content: data.data.response, id: Date.now() + 1 };
                     setMessages(prev => [...prev, aiMessage]);
-                    console.log('✓ Response received');
                 }
             } else {
                 throw new Error('Failed to get response');
             }
         } catch (error) {
-            console.error("✗ Error: ", error);
             const errorMessage = {
                 type: 'ai',
                 content: "Sorry, there was an error processing your request. Please try again.",

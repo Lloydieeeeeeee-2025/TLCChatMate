@@ -38,7 +38,7 @@ export default function Login() {
                 setErrorMessage(data.message || "Invalid username or password.");
             }
         } catch (error) {
-            console.error("Login error:", error);
+            // Error handling without console output
             setErrorMessage("Something went wrong. Please try again.");
         }
     };

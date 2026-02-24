@@ -7,7 +7,6 @@ export async function POST(req) {
     try {
         const { prompt, conversationSession } = await req.json();
 
-        console.log("Sending request to FastAPI with prompt:", prompt);
         // 
         // ${API_BASE_URL}/VirtualFrontDesk
         // http://127.0.0.1:8000/VirtualFrontDesk
@@ -20,10 +19,7 @@ export async function POST(req) {
             }),
         });
 
-        console.log("FastAPI response status:", fastapiResponse.status);
-
         const text = await fastapiResponse.text();
-        console.log("FastAPI raw body:", text);
 
         if (!fastapiResponse.ok) {
             return NextResponse.json(

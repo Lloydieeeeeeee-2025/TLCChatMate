@@ -44,7 +44,6 @@ local http://localhost:3000/student/faqs
             viewport.name = 'viewport';
             viewport.content = 'width=device-width, initial-scale=1.0, viewport-fit=cover';
             document.head.insertBefore(viewport, document.head.firstChild);
-            console.log('✓ Added viewport meta tag');
         }
     }
 
@@ -374,8 +373,6 @@ local http://localhost:3000/student/faqs
                 toggleChat();
             }
         });
-
-        console.log('✓ TLC ChatMate Widget initialized v2.1.2');
     }
 
     // Initialize when DOM is ready
