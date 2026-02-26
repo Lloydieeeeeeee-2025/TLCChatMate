@@ -6,8 +6,8 @@ const API_BASE_URL =
 export async function GET() {
     try {
 
-        // ${API_BASE_URL}/admin/sync-status  - production
-        // http://127.0.0.1:8000/admin/sync-status - localhost
+        // ${API_BASE_URL}/admin/sync-status 
+        // http://127.0.0.1:8000/admin/sync-status 
         const response = await fetch(`${API_BASE_URL}/admin/sync-status`, {
             method: 'GET',
             headers: {

@@ -23,5 +23,4 @@ export const chatmate = mysql.createPool({
     database: "tlcchatmate",
     port: 3306,
 });
-
 */
