@@ -7,7 +7,7 @@ local http://localhost:3000/student/faqs
 (function () {
     'use strict';
     const WIDGET_CONFIG = {
-        iframeUrl: 'https://tlcchatmate.online/student/faqs',
+        iframeUrl: 'https://tlcchatmate.online',
         buttonId: 'tlc-chatmate-button',
         containerId: 'tlc-chatmate-container',
         iframeId: 'tlc-chatmate-iframe',
@@ -346,6 +346,7 @@ local http://localhost:3000/student/faqs
 
         // Handle window resize for button size and mobile detection
         let resizeTimer;
+        let prevIsMobile = isMobile();
         window.addEventListener('resize', function () {
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
@@ -353,11 +354,13 @@ local http://localhost:3000/student/faqs
                 button.style.width = newSize + 'px';
                 button.style.height = newSize + 'px';
 
-                // If resizing from mobile to desktop or vice versa, close the chat
-                const wasOpenAndShouldBeClosed = isOpen && isMobile();
-                if (wasOpenAndShouldBeClosed) {
+                // Only close chat when crossing the mobile/desktop breakpoint,
+                // not on every resize (e.g. virtual keyboard appearing on mobile)
+                const currentIsMobile = isMobile();
+                if (isOpen && prevIsMobile !== currentIsMobile) {
                     toggleChat();
                 }
+                prevIsMobile = currentIsMobile;
             }, 250);
         });
 

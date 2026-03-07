@@ -21,7 +21,7 @@ export function middleware(request) {
 
     if (isProtectedPath && !session) {
         // Redirect to login page if no session cookie exists
-        return NextResponse.redirect(new URL('/', request.url));
+        return NextResponse.redirect(new URL('/admin/login', request.url));
     }
 
     return NextResponse.next();

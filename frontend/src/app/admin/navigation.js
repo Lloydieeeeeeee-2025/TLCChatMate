@@ -14,13 +14,14 @@ export default function Navigation() {
     const [isSyncing, setIsSyncing] = useState(false)
     const [syncProgress, setSyncProgress] = useState({ step: null, status: "idle" })
     const pollingInterval = useRef(null)
+    const lastActivityRefresh = useRef(0)
 
     useEffect(() => {
         const storedUserData = localStorage.getItem("userData")
         if (storedUserData) {
             setUserData(JSON.parse(storedUserData))
         } else if (get_current_page.startsWith("/admin")) {
-            router.push("/")
+            router.push("/admin/login")
         }
 
         checkSession()
@@ -42,6 +43,31 @@ export default function Navigation() {
         }
     }, [router])
 
+    // Sliding session: refresh the cookie whenever the user is active.
+    // Throttled to at most once every 5 minutes to avoid excessive requests.
+    useEffect(() => {
+        const THROTTLE_MS = 5 * 60 * 1000 // 5 minutes
+
+        const handleActivity = async () => {
+            const now = Date.now()
+            if (now - lastActivityRefresh.current < THROTTLE_MS) return
+            lastActivityRefresh.current = now
+
+            try {
+                await fetch("/api/admin/session-refresh", { method: "POST" })
+            } catch (error) {
+                // Silently ignore — session-check will handle expiry detection
+            }
+        }
+
+        const events = ["mousemove", "keydown", "click", "scroll", "touchstart"]
+        events.forEach(event => window.addEventListener(event, handleActivity, { passive: true }))
+
+        return () => {
+            events.forEach(event => window.removeEventListener(event, handleActivity))
+        }
+    }, [])
+
     const checkSession = async () => {
         try {
             const response = await fetch("/api/admin/session-check")
@@ -52,7 +78,7 @@ export default function Navigation() {
 
                 // Only redirect if we are currently on an admin page
                 if (get_current_page.startsWith("/admin")) {
-                    router.push("/")
+                    router.push("/admin/login")
                 }
             }
         } catch (error) {
@@ -303,7 +329,7 @@ export default function Navigation() {
                                                         console.error("Logout failed:", error);
                                                     }
                                                     localStorage.removeItem("userData");
-                                                    router.push("/");
+                                                    router.push("/admin/login");
                                                 }}
                                                 className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150"
                                             >

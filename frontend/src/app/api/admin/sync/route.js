@@ -8,7 +8,7 @@ export async function POST() {
 
         // ${API_BASE_URL}/admin/sync  
         // http://127.0.0.1:8000/admin/sync 
-        const response = await fetch(`${API_BASE_URL}/admin/sync `, {
+        const response = await fetch(`${API_BASE_URL}/admin/sync`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
