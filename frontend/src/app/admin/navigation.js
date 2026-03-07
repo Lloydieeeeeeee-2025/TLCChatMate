@@ -312,7 +312,7 @@ export default function Navigation() {
                                         </div>
                                         <div className="py-2">
                                             <Link
-                                                href="/student/faqs"
+                                                href="/"
                                                 className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
