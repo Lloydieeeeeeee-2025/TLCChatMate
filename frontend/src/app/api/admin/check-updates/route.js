@@ -6,7 +6,7 @@ const API_BASE_URL =
 export async function GET() {
     try {
 
-        // ${API_BASE_URL}/admin/check-updates  
+        // ${API_BASE_URL}/admin/check-updates
         // http://127.0.0.1:8000/admin/check-updates 
         const response = await fetch(`${API_BASE_URL}/admin/check-updates`, {
             method: 'GET',
