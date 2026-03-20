@@ -1,5 +1,6 @@
 import { chatmate } from "../../../../../library/tlcchatmatedb/route";
 import { NextResponse } from "next/server";
+import { requireAdminSession } from "../../../../../library/auth/guard";
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -14,6 +15,8 @@ async function parseFormData(req) {
 
 // POST: Upload new handbook
 export async function POST(req) {
+  const auth = await requireAdminSession();
+  if (auth.error) return auth.error;
   try {
     const formData = await parseFormData(req);
     const handbookDocument = formData.get("handbook_document");
@@ -46,12 +49,14 @@ export async function POST(req) {
       }, { status: 413 });
     }
 
-    return NextResponse.json({ success: false, message: "Failed to upload handbook: " + err.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: "Failed to upload handbook" }, { status: 500 });
   }
 }
 
 // GET: Fetch handbooks (active or archived)
 export async function GET(req) {
+  const auth = await requireAdminSession();
+  if (auth.error) return auth.error;
   try {
     const { searchParams } = new URL(req.url);
     const handbookId = searchParams.get("handbook_id");
@@ -91,6 +96,8 @@ export async function GET(req) {
 
 // PUT: Update handbook
 export async function PUT(req) {
+  const auth = await requireAdminSession();
+  if (auth.error) return auth.error;
   try {
     const formData = await parseFormData(req);
     const handbookId = formData.get("handbook_id");
@@ -135,6 +142,8 @@ export async function PUT(req) {
 
 // PATCH: Archive or Unarchive
 export async function PATCH(req) {
+  const auth = await requireAdminSession();
+  if (auth.error) return auth.error;
   try {
     const { handbook_id, action } = await req.json();
 
@@ -163,6 +172,8 @@ export async function PATCH(req) {
 
 // DELETE: Hard delete (keep this!)
 export async function DELETE(req) {
+  const auth = await requireAdminSession();
+  if (auth.error) return auth.error;
   try {
     const { searchParams } = new URL(req.url);
     let handbookId = searchParams.get("handbook_id");

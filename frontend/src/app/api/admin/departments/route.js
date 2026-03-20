@@ -1,8 +1,11 @@
 // app/api/admin/departments/route.js
 import { chatmate } from "../../../../../library/tlcchatmatedb/route";
+import { requireAdminSession } from "../../../../../library/auth/guard";
 
 //
 export async function GET(request) {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
         const [departments] = await chatmate.execute(
             "SELECT department_id, department_name, created_at, updated_at FROM departments ORDER BY department_name ASC"
@@ -22,6 +25,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
         const { department_name } = await request.json();
 
@@ -80,6 +85,8 @@ export async function POST(request) {
 }
 
 export async function PUT(request) {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
         const { department_id, department_name } = await request.json();
 
@@ -146,6 +153,8 @@ export async function PUT(request) {
 }
 
 export async function DELETE(request) {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
         const { department_id, id } = await request.json();
         const targetId = department_id || id;

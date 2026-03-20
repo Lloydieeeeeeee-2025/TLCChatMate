@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 import { chatmate } from "../../../../../library/tlcchatmatedb/route";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
+import { requireAdminSession } from "../../../../../library/auth/guard";
 
 //
 export async function GET() {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
         const [users] = await chatmate.query("SELECT user_id, user_name FROM `User`");
 
@@ -15,6 +18,8 @@ export async function GET() {
 }
 
 export async function DELETE(request) {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
         const body = await request.json();
         const userId = body.user_id || body.id;
@@ -65,6 +70,8 @@ export async function DELETE(request) {
 }
 
 export async function PUT(request) {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
         const { user_id, user_name, currentPassword, newPassword } = await request.json();
 
@@ -141,6 +148,8 @@ export async function PUT(request) {
 }
 
 export async function POST(request) {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
         const { user_name, user_password } = await request.json();
 

@@ -67,7 +67,6 @@ export async function POST(request) {
             {
                 success: false,
                 message: "Server error during login.",
-                debug: error.message // Remove this in production!
             },
             { status: 500 }
         );

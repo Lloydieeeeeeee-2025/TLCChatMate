@@ -1,5 +1,6 @@
 // app/api/admin/faqs/route.js
 import { chatmate } from "../../../../../library/tlcchatmatedb/route";
+import { requireAdminSession } from "../../../../../library/auth/guard";
 
 export async function GET(request) {
     try {
@@ -70,6 +71,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
         const { question, department_id } = await request.json();
 
@@ -136,6 +139,8 @@ export async function POST(request) {
 }
 
 export async function PUT(request) {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
         const { faq_id, question, department_id } = await request.json();
 
@@ -202,6 +207,8 @@ export async function PUT(request) {
 }
 
 export async function DELETE(request) {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
         const { faq_id, id } = await request.json();
         const targetId = faq_id || id;

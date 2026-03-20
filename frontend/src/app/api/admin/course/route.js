@@ -1,10 +1,13 @@
 import { chatmate } from "../../../../../library/tlcchatmatedb/route";
 import { NextResponse } from "next/server";
+import { requireAdminSession } from "../../../../../library/auth/guard";
 
 const MAX_FILE_SIZE_MB = 100;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 export async function POST(req) {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
         const formData = await req.formData();
         const courseDocument = formData.get("course_document");
@@ -42,6 +45,8 @@ export async function POST(req) {
 }
 
 export async function GET(req) {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
         const { searchParams } = new URL(req.url);
         const courseId = searchParams.get("course_id");
@@ -74,6 +79,8 @@ export async function GET(req) {
 }
 
 export async function PUT(req) {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
         const formData = await req.formData();
         const courseId = formData.get("course_id");
@@ -118,6 +125,8 @@ export async function PUT(req) {
 
 // Soft-delete (archive/unarchive)
 export async function PATCH(req) {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
         const { course_id, action } = await req.json();
 
@@ -146,6 +155,8 @@ export async function PATCH(req) {
 
 // Hard delete (keep this!)
 export async function DELETE(req) {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
         const { searchParams } = new URL(req.url);
         let courseId = searchParams.get("course_id");

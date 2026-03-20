@@ -1,9 +1,38 @@
 import { NextResponse } from "next/server";
 import { chatmate } from "../../../../../library/tlcchatmatedb/route";
+import { requireAdminSession } from "../../../../../library/auth/guard";
+
+/**
+ * SSRF protection: block internal/loopback addresses and non-http(s) schemes.
+ */
+function isUrlSafe(urlStr) {
+    try {
+        const parsed = new URL(urlStr);
+        if (!['http:', 'https:'].includes(parsed.protocol)) return false;
+        const hostname = parsed.hostname.toLowerCase();
+        const blocked = [
+            'localhost', '127.0.0.1', '0.0.0.0', '::1',
+            '169.254.169.254',  // AWS/GCP/Azure metadata
+            '10.0.0.1', 'host.docker.internal',
+        ];
+        // Block private IP ranges (10.x.x.x, 172.16-31.x.x, 192.168.x.x)
+        if (
+            /^10\./.test(hostname) ||
+            /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
+            /^192\.168\./.test(hostname) ||
+            blocked.includes(hostname)
+        ) return false;
+        return true;
+    } catch {
+        return false;
+    }
+}
 
 
 
 export async function GET() {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
 
         const [rows] = await chatmate.execute("SELECT * FROM url ORDER BY url_id DESC");
@@ -16,11 +45,17 @@ export async function GET() {
 }
 
 export async function POST(request) {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
         const { link_url, description } = await request.json();
 
         if (!link_url) {
             return NextResponse.json({ success: false, message: "URL is required" }, { status: 400 });
+        }
+
+        if (!isUrlSafe(link_url)) {
+            return NextResponse.json({ success: false, message: "Invalid or disallowed URL. Only public http/https URLs are accepted." }, { status: 400 });
         }
 
         const [result] = await chatmate.execute(
@@ -36,11 +71,17 @@ export async function POST(request) {
 }
 
 export async function PUT(request) {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
         const { url_id, link_url, description } = await request.json();
 
         if (!url_id || !link_url) {
             return NextResponse.json({ success: false, message: "URL ID and link URL are required" }, { status: 400 });
+        }
+
+        if (!isUrlSafe(link_url)) {
+            return NextResponse.json({ success: false, message: "Invalid or disallowed URL. Only public http/https URLs are accepted." }, { status: 400 });
         }
 
         await chatmate.execute(
@@ -56,6 +97,8 @@ export async function PUT(request) {
 }
 
 export async function DELETE(request) {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
         const body = await request.json();
         const id = body.url_id || body.id;

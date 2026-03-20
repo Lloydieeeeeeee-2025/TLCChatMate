@@ -1,11 +1,64 @@
 import { NextResponse } from "next/server";
+import { RateLimiterMemory } from "rate-limiter-flexible";
 
 const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_BASE_URL || "http://backend:8000";
 
+// ---------------------------------------------------------------------------
+// Rate limiter: max 20 requests per IP per 60 seconds.
+// Uses in-memory storage — no Redis or DB required.
+// ---------------------------------------------------------------------------
+const chatRateLimiter = new RateLimiterMemory({
+    points: 20,       // max requests allowed
+    duration: 60,     // per 60 seconds
+});
+
 export async function POST(req) {
+    // --- Rate limiting ---
+    const ip =
+        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        req.headers.get("x-real-ip") ||
+        "unknown";
+
+    try {
+        await chatRateLimiter.consume(ip);
+    } catch (rateLimitError) {
+        const secs = Math.ceil(rateLimitError.msBeforeNext / 1000) || 60;
+        return NextResponse.json(
+            {
+                success: false,
+                error: `Too many requests. Please wait ${secs} second(s) before sending another message.`,
+            },
+            {
+                status: 429,
+                headers: { "Retry-After": String(secs) },
+            }
+        );
+    }
+
     try {
         const { prompt, conversationSession } = await req.json();
+
+        // Input validation — prevent prompt-bombing and malformed requests
+        if (!prompt || typeof prompt !== "string" || prompt.trim() === "") {
+            return NextResponse.json(
+                { success: false, error: "A valid prompt is required." },
+                { status: 400 }
+            );
+        }
+        if (prompt.length > 2000) {
+            return NextResponse.json(
+                { success: false, error: "Prompt exceeds maximum length of 2000 characters." },
+                { status: 400 }
+            );
+        }
+        if (conversationSession !== undefined && conversationSession !== null &&
+            typeof conversationSession !== "string") {
+            return NextResponse.json(
+                { success: false, error: "Invalid conversationSession format." },
+                { status: 400 }
+            );
+        }
 
         // 
         // ${API_BASE_URL}/VirtualFrontDesk
@@ -55,7 +108,6 @@ export async function POST(req) {
             {
                 success: false,
                 error: "Internal server error in Next.js API",
-                details: error.message || String(error),
             },
             { status: 500 }
         );

@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { requireAdminSession } from "../../../../../library/auth/guard";
 
 export async function POST() {
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
     try {
         const cookieStore = await cookies();
         const session = cookieStore.get("session");
