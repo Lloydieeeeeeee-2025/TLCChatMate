@@ -13,17 +13,46 @@ export default function FAQS() {
     const messagesEndRef = useRef(null);
     const textareaRef = useRef(null);
 
+    // ---------------------------------------------------------------------------
+    // isNewPageLoad ref — true only for the FIRST message sent after the page
+    // loads.  Using a ref (not state) keeps it out of the render cycle and means
+    // it is never accidentally reset by a re-render.
+    //
+    // WHY THIS MATTERS:
+    // The session ID lives in sessionStorage so it is cleared when the tab is
+    // closed, but it survives a page RELOAD in every browser (that is intentional
+    // — it lets a student refresh without losing their place).  However we also
+    // need the backend to wipe its in-memory history on a reload so stale context
+    // from a previous question cannot bleed into the new page session.  Sending
+    // isNewPageLoad=true on the first message of each page load tells the backend
+    // to do exactly that, regardless of whether the session ID is new or reused.
+    // ---------------------------------------------------------------------------
+    const isNewPageLoadRef = useRef(true);
+
     // Initialize session on mount
     useEffect(() => {
         const initializeSession = () => {
-            const storedSessionId = localStorage.getItem('tlc_chatmate_session_id');
+            // sessionStorage is scoped to the browser TAB and its lifetime:
+            //   - Cleared automatically when the tab is CLOSED  ✓
+            //   - Cleared automatically when the tab is RELOADED in most cases,
+            //     but even when it survives a reload the isNewPageLoad flag on the
+            //     first message tells the backend to reset its history.
+            //   - Never shared across tabs (each tab gets its own session)  ✓
+            //   - Never persists across browser restarts  ✓
+            //
+            // This replaces the previous localStorage approach which kept the
+            // same session ID alive forever, causing old conversation context
+            // to bleed into new page sessions — most visibly in MS Edge.
+            const storedSessionId = sessionStorage.getItem('tlc_chatmate_session_id');
 
             let sessionId;
             if (storedSessionId) {
+                // Re-use the existing tab session ID — the isNewPageLoad flag
+                // sent on the first message will reset backend history.
                 sessionId = storedSessionId;
             } else {
                 sessionId = 'session_' + crypto.randomUUID();
-                localStorage.setItem('tlc_chatmate_session_id', sessionId);
+                sessionStorage.setItem('tlc_chatmate_session_id', sessionId);
             }
 
             setConversationSession(sessionId);
@@ -166,6 +195,11 @@ export default function FAQS() {
 
         setIsLoading(true);
 
+        // Capture and immediately flip the page-load flag so only the very
+        // first message of this page load carries isNewPageLoad=true.
+        const pageLoadFlag = isNewPageLoadRef.current;
+        isNewPageLoadRef.current = false;
+
         try {
             const response = await fetch("/api/chat", {
                 method: "POST",
@@ -173,6 +207,7 @@ export default function FAQS() {
                 body: JSON.stringify({
                     prompt: userMessage,
                     conversationSession: conversationSession,
+                    isNewPageLoad: pageLoadFlag,
                 }),
             });
 

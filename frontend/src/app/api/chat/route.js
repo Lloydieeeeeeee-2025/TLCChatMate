@@ -4,10 +4,6 @@ import { RateLimiterMemory } from "rate-limiter-flexible";
 const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_BASE_URL || "http://backend:8000";
 
-// ---------------------------------------------------------------------------
-// Rate limiter: max 20 requests per IP per 60 seconds.
-// Uses in-memory storage — no Redis or DB required.
-// ---------------------------------------------------------------------------
 const chatRateLimiter = new RateLimiterMemory({
     points: 20,       // max requests allowed
     duration: 60,     // per 60 seconds
@@ -37,7 +33,7 @@ export async function POST(req) {
     }
 
     try {
-        const { prompt, conversationSession } = await req.json();
+        const { prompt, conversationSession, isNewPageLoad } = await req.json();
 
         // Input validation — prevent prompt-bombing and malformed requests
         if (!prompt || typeof prompt !== "string" || prompt.trim() === "") {
@@ -60,7 +56,6 @@ export async function POST(req) {
             );
         }
 
-        // 
         // ${API_BASE_URL}/VirtualFrontDesk
         // http://127.0.0.1:8000/VirtualFrontDesk
         const fastapiResponse = await fetch(`${API_BASE_URL}/VirtualFrontDesk`, {
@@ -68,7 +63,8 @@ export async function POST(req) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 prompt,
-                conversationSession: conversationSession ?? ""
+                conversationSession: conversationSession ?? "",
+                isNewPageLoad: isNewPageLoad === true,
             }),
         });
 
@@ -97,7 +93,6 @@ export async function POST(req) {
             );
         }
 
-        // Wrap the backend response in the format your frontend expects
         return NextResponse.json({
             success: true,
             data: backendData

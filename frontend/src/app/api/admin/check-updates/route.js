@@ -8,14 +8,11 @@ export async function GET() {
     const auth = await requireAdminSession();
     if (auth.error) return auth.error;
     try {
-
         // ${API_BASE_URL}/admin/check-updates
         // http://127.0.0.1:8000/admin/check-updates
         const response = await fetch(`${API_BASE_URL}/admin/check-updates`, {
             method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             cache: 'no-store'
         });
 
