@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
 import { requireAdminSession } from "../../../../../library/auth/guard";
-
-const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://backend:8000";
+import { getBackendUrl } from "../../../../lib/backendUrl";
 
 export async function GET() {
     const auth = await requireAdminSession();
     if (auth.error) return auth.error;
+    const base = getBackendUrl();
     try {
-        // ${API_BASE_URL}/admin/sync-status
-        // http://127.0.0.1:8000/admin/sync-status
-        const response = await fetch(`${API_BASE_URL}/admin/sync-status`, {
+        const response = await fetch(`${base}/admin/sync-status`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
             cache: 'no-store'
@@ -27,7 +24,9 @@ export async function GET() {
         return NextResponse.json({
             step: null,
             status: "error",
-            message: "Internal server error fetching status"
+            message: String(error?.message || "").toLowerCase().includes("fetch")
+                ? `Cannot reach ChatMate API at ${base}. Set BACKEND_URL or NEXT_PUBLIC_API_BASE_URL, or start VirtualFrontDesk on port 8000.`
+                : (error?.message || "Internal server error fetching status"),
         }, { status: 500 });
     }
 }

@@ -245,7 +245,7 @@ export default function Handbook() {
                                 {loading ? (
                                     <div className="flex flex-col justify-center items-center py-16">
                                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#205781]"></div>
-                                        <p className="mt-4 text-sm text-gray-500">Loading handbooks...</p>
+                                        <p className="mt-4 text-sm text-gray-600">Loading handbooks...</p>
                                     </div>
                                 ) : error ? (
                                     <div className="flex flex-col justify-center items-center py-16 px-4">
@@ -255,7 +255,7 @@ export default function Handbook() {
                                 ) : sortedData.length === 0 ? (
                                     <div className="flex flex-col justify-center items-center py-16">
                                         <svg className="w-12 h-12 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
-                                        <p className="text-gray-500 text-center">{searchData ? "No matching handbooks found" : "No handbooks uploaded yet"}</p>
+                                        <p className="text-gray-600 text-center">{searchData ? "No matching handbooks found" : "No handbooks uploaded yet"}</p>
                                     </div>
                                 ) : (
                                     <div className="min-w-full">
@@ -278,7 +278,7 @@ export default function Handbook() {
                                                             </td>
                                                             <td className="px-6 py-4 text-center relative" data-dropdown={handbook.handbook_id}>
                                                                 <div className="relative flex justify-center">
-                                                                    <button onClick={() => toggleDropdown(handbook.handbook_id)} className="p-2 text-[#205781] hover:bg-[#205781]/10 rounded-lg transition-all duration-150">
+                                                                    <button onClick={() => toggleDropdown(handbook.handbook_id)} className="p-2 text-[#205781] hover:bg-[#205781]/10 rounded-lg transition-all duration-150" aria-label="Actions menu">
                                                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
                                                                             <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                                                                         </svg>

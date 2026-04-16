@@ -1,32 +1,23 @@
-import { Nunito_Sans, Geist, Geist_Mono } from "next/font/google";
+import { Nunito_Sans } from "next/font/google";
 import "./globals.css";
 
 const nunitoSans = Nunito_Sans({
-  subsets: ["latin"]
+  subsets: ["latin"],
+  display: "swap",
 })
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata = {
   title: "TLC ChatMate",
   description: "TLC ChatMate: A Web-based Conversational Agent for The Lewis College",
   icons: {
-    icon: ["frontend/frontend/public/favicon.ico"]
+    icon: "/favicon.webp",
   }
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${nunitoSans.className} ${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${nunitoSans.className} antialiased`}>
         {children}
       </body>
     </html>

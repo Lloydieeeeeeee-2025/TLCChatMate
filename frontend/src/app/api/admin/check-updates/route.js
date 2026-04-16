@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
 import { requireAdminSession } from "../../../../../library/auth/guard";
-
-const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://backend:8000";
+import { getBackendUrl } from "../../../../lib/backendUrl";
 
 export async function GET() {
     const auth = await requireAdminSession();
     if (auth.error) return auth.error;
+    const base = getBackendUrl();
     try {
-        // ${API_BASE_URL}/admin/check-updates
-        // http://127.0.0.1:8000/admin/check-updates
-        const response = await fetch(`${API_BASE_URL}/admin/check-updates`, {
+        const response = await fetch(`${base}/admin/check-updates`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
             cache: 'no-store'

@@ -36,9 +36,9 @@ export default function Success({ isOpen, onClose, message, body, link, save }) 
                         <span className="sr-only">Close modal</span>
                     </button>
                     <div className="p-4 md:p-5 text-center">
-                        <h3 className="mb-2 text-lg font-bold text-gray-900">
+                        <h2 className="mb-2 text-lg font-bold text-gray-900">
                             {message || "Success!"}
-                        </h3>
+                        </h2>
                         <p className="mb-6 text-sm text-gray-500 font-medium font-gray-600">
                             {body || "Your operation was completed successfully."}
                         </p>

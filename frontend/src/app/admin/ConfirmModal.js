@@ -22,7 +22,7 @@ export default function ConfirmModal({ isOpen, onClose, onConfirm, title, messag
                         <svg className={`mx-auto mb-4 ${type === 'danger' ? 'text-red-400' : 'text-[#205781]'} w-12 h-12`} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                             <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 13V8m0 8h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                         </svg>
-                        <h3 className="mb-6 text-gray-600 font-medium">{message}</h3>
+                        <p className="mb-6 text-gray-600 font-medium">{message}</p>
                         <div className="flex items-center space-x-4 justify-center">
                             <button
                                 onClick={() => { onConfirm(); onClose(); }}

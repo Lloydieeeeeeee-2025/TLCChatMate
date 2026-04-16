@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
 
@@ -12,9 +13,36 @@ export default function Navigation() {
     const [userData, setUserData] = useState(null)
     const [hasUpdates, setHasUpdates] = useState(false)
     const [isSyncing, setIsSyncing] = useState(false)
-    const [syncProgress, setSyncProgress] = useState({ step: null, status: "idle" })
+    const [syncProgress, setSyncProgress] = useState({ step: null, status: "idle", message: null })
     const pollingInterval = useRef(null)
     const lastActivityRefresh = useRef(0)
+    const transientErrorsRef = useRef({
+        session: false,
+        updates: false,
+        syncStatus: false,
+    })
+
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+    const fetchWithRetry = async (url, options = {}, retries = 1, backoffMs = 300) => {
+        let lastError = null
+        for (let i = 0; i <= retries; i++) {
+            try {
+                const response = await fetch(url, {
+                    cache: "no-store",
+                    ...options,
+                })
+                return response
+            } catch (error) {
+                lastError = error
+                if (i < retries) {
+                    await delay(backoffMs * (i + 1))
+                    continue
+                }
+            }
+        }
+        throw lastError
+    }
 
     useEffect(() => {
         const storedUserData = localStorage.getItem("userData")
@@ -70,7 +98,7 @@ export default function Navigation() {
 
     const checkSession = async () => {
         try {
-            const response = await fetch("/api/admin/session-check")
+            const response = await fetchWithRetry("/api/admin/session-check", {}, 1)
             if (!response.ok) {
                 // Session expired or invalid
                 localStorage.removeItem("userData")
@@ -81,32 +109,54 @@ export default function Navigation() {
                     router.push("/admin/login")
                 }
             }
+            transientErrorsRef.current.session = false
         } catch (error) {
-            console.error("Error checking session:", error)
+            const isTransient = error?.name === "AbortError" || /Failed to fetch/i.test(error?.message || "")
+            if (!isTransient || !transientErrorsRef.current.session) {
+                console.warn("Session check temporarily unavailable:", error?.message || error)
+                transientErrorsRef.current.session = true
+            }
         }
     }
 
     const checkUpdates = async () => {
         try {
-            const response = await fetch("/api/admin/check-updates")
+            const response = await fetchWithRetry("/api/admin/check-updates", {}, 1)
+            if (!response.ok) {
+                setHasUpdates(false)
+                return
+            }
             const data = await response.json()
             setHasUpdates(data.updates_available)
+            transientErrorsRef.current.updates = false
         } catch (error) {
-            console.error("Error checking updates:", error)
+            const isTransient = error?.name === "AbortError" || /Failed to fetch/i.test(error?.message || "")
+            if (!isTransient || !transientErrorsRef.current.updates) {
+                console.warn("Update check temporarily unavailable:", error?.message || error)
+                transientErrorsRef.current.updates = true
+            }
         }
     }
 
     const checkInitialSyncStatus = async () => {
         try {
-            const response = await fetch("/api/admin/sync-status")
+            const response = await fetchWithRetry("/api/admin/sync-status", {}, 1)
+            if (!response.ok) return
             const data = await response.json()
-            if (data.status === "running") {
+            if (data.status === "running" || data.status === "error") {
                 setIsSyncing(true)
                 setSyncProgress(data)
-                startPolling()
+                if (data.status === "running") {
+                    startPolling()
+                }
             }
+            transientErrorsRef.current.syncStatus = false
         } catch (error) {
-            console.error("Error checking sync status:", error)
+            const isTransient = error?.name === "AbortError" || /Failed to fetch/i.test(error?.message || "")
+            if (!isTransient || !transientErrorsRef.current.syncStatus) {
+                console.warn("Sync status temporarily unavailable:", error?.message || error)
+                transientErrorsRef.current.syncStatus = true
+            }
         }
     }
 
@@ -114,7 +164,8 @@ export default function Navigation() {
         if (pollingInterval.current) clearInterval(pollingInterval.current)
         pollingInterval.current = setInterval(async () => {
             try {
-                const response = await fetch("/api/admin/sync-status")
+                const response = await fetchWithRetry("/api/admin/sync-status", {}, 1)
+                if (!response.ok) return
                 const data = await response.json()
                 setSyncProgress(data)
                 if (data.status === "completed" || data.status === "error") {
@@ -124,7 +175,11 @@ export default function Navigation() {
                     clearInterval(pollingInterval.current)
                 }
             } catch (error) {
-                console.error("Error polling sync status:", error)
+                const isTransient = error?.name === "AbortError" || /Failed to fetch/i.test(error?.message || "")
+                if (!isTransient || !transientErrorsRef.current.syncStatus) {
+                    console.warn("Sync polling temporarily unavailable:", error?.message || error)
+                    transientErrorsRef.current.syncStatus = true
+                }
             }
         }, 2000)
     }
@@ -132,20 +187,41 @@ export default function Navigation() {
     const handleApplyChanges = async () => {
         try {
             const response = await fetch("/api/admin/sync", { method: "POST" })
-            const data = await response.json()
-            if (data.success) {
+            const data = await response.json().catch(() => ({}))
+            if (response.ok && data.success) {
                 setIsSyncing(true)
+                setSyncProgress({
+                    step: data.step ?? "Starting",
+                    status: "running",
+                    message: data.message ?? null,
+                })
                 startPolling()
+            } else {
+                setIsSyncing(true)
+                setSyncProgress({
+                    step: null,
+                    status: "error",
+                    message:
+                        data.message ||
+                        data.error ||
+                        (response.ok ? "Sync was rejected by the server." : `Request failed (${response.status}).`),
+                })
             }
         } catch (error) {
             console.error("Error triggering sync:", error)
+            setIsSyncing(true)
+            setSyncProgress({
+                step: null,
+                status: "error",
+                message: error?.message || "Network error while starting sync.",
+            })
         }
     }
 
     const closeProgressModal = () => {
         setIsSyncing(false)
         if (syncProgress.status !== "running") {
-            setSyncProgress({ step: null, status: "idle" })
+            setSyncProgress({ step: null, status: "idle", message: null })
         }
     }
 
@@ -219,6 +295,7 @@ export default function Navigation() {
                         <button
                             onClick={closeProgressModal}
                             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                            aria-label="Close progress modal"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -250,7 +327,12 @@ export default function Navigation() {
                             </ol>
 
                             {syncProgress.status === "error" && (
-                                <p className="mt-4 text-center text-sm text-red-600 font-medium">An error occurred while applying changes. Please try again.</p>
+                                <div className="mt-4 text-center space-y-2">
+                                    <p className="text-sm text-red-600 font-medium">An error occurred while applying changes. Please try again.</p>
+                                    {syncProgress.message && (
+                                        <p className="text-xs text-gray-600 break-words max-h-32 overflow-y-auto">{syncProgress.message}</p>
+                                    )}
+                                </div>
                             )}
                             {syncProgress.status === "completed" && (
                                 <p className="mt-4 text-center text-sm text-green-600 font-medium">Changes applied successfully!</p>
@@ -268,6 +350,7 @@ export default function Navigation() {
                             <button
                                 onClick={() => setIsMenuActive(!isMenuActive)}
                                 className="inline-flex items-center justify-center p-2.5 rounded-lg text-gray-600 hover:bg-gray-50 focus:outline-none sm:hidden transition-all duration-200"
+                                aria-label="Toggle navigation menu"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -275,7 +358,7 @@ export default function Navigation() {
                             </button>
 
                             <div className="flex items-center gap-3">
-                                <img src="/favicon.ico" className="h-8 sm:h-10" alt="Logo" />
+                                <Image src="/favicon.webp" width={40} height={40} alt="Logo" priority />
                                 <span className="text-lg sm:text-xl font-bold text-[#205781]">TLC ChatMate</span>
                             </div>
                         </div>
@@ -297,7 +380,7 @@ export default function Navigation() {
                             </button>
 
                             <div className="relative">
-                                <button type="button" onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-2 p-1.5 rounded-full hover:bg-gray-50 focus:outline-none transition-all duration-200">
+                                <button type="button" onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-2 p-1.5 rounded-full hover:bg-gray-50 focus:outline-none transition-all duration-200" aria-label="User menu">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" />
                                     </svg>
@@ -363,7 +446,7 @@ export default function Navigation() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-semibold text-white truncate">{userData?.user_name || "Guest"}</p>
-                                    <p className="text-xs text-white/70 truncate">Admin</p>
+                                    <p className="text-xs text-white/80 truncate">Admin</p>
                                 </div>
                             </div>
                         </div>

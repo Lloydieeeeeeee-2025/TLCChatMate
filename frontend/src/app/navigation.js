@@ -1,4 +1,5 @@
 "use client"
+import Image from "next/image";
 
 export default function Navigation() {
     const isEmbedded = typeof window !== 'undefined' && window.parent !== window;
@@ -8,7 +9,7 @@ export default function Navigation() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                 {/* Logo on left */}
                 <div className="flex items-center">
-                    <img className="object-contain h-8 sm:h-10 lg:h-12 w-auto mr-2" src="/favicon.ico" alt="TLC Logo" />
+                    <Image className="object-contain mr-2" src="/favicon.webp" alt="TLC Logo" width={48} height={48} priority />
                     <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">
                         <span className="text-[#205781]">TLC ChatMate</span>
                     </h1>

@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { RateLimiterMemory } from "rate-limiter-flexible";
-
-const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://backend:8000";
+import { getBackendUrl } from "../../../lib/backendUrl";
 
 const chatRateLimiter = new RateLimiterMemory({
     points: 20,       // max requests allowed
@@ -56,9 +54,8 @@ export async function POST(req) {
             );
         }
 
-        // ${API_BASE_URL}/VirtualFrontDesk
-        // http://127.0.0.1:8000/VirtualFrontDesk
-        const fastapiResponse = await fetch(`${API_BASE_URL}/VirtualFrontDesk`, {
+        const base = getBackendUrl();
+        const fastapiResponse = await fetch(`${base}/VirtualFrontDesk`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
